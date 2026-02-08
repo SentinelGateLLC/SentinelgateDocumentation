@@ -948,9 +948,9 @@ shopify app deploy
 ## 📞 Support & Resources
 
 ### Documentation
-- **API Docs:** https://docs.sentinelgate.com/api
-- **Video Tutorials:** https://youtube.com/sentinelgate
-- **Developer Portal:** https://developers.sentinelgate.com
+- **API Docs:** https://docs.sentinelgate.biz/api
+- **Video Tutorials:** https://youtube.biz/sentinelgate
+- **Developer Portal:** https://developers.sentinelgate.biz
 
 ### Community
 - **Slack:** sentinelgate.slack.com
@@ -959,9 +959,9 @@ shopify app deploy
 
 ### Contact
 - **General:** support@sentinelgate.com
-- **Shopify-specific:** shopify-support@sentinelgate.com
-- **Sales:** sales@sentinelgate.com
-- **Emergency:** +254-XXX-XXXXXX (24/7)
+- **Shopify-specific:** shopify-support@sentinelgate.biz
+- **Sales:** sales@sentinelgate.biz
+- **Emergency:**  + 1 418 476 0308 (24/7)
 
 ---
 
