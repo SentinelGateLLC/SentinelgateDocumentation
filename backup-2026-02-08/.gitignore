@@ -1,0 +1,27 @@
+﻿# CREDENTIALS - NEVER COMMIT THESE!
+*credentials*.txt
+*credentials*.json
+*CREDENTIALS*
+merchant-credentials*
+*api_key*
+*api_secret*
+*webhook_secret*
+merchant-packages/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Secrets
+secrets.*
+config/secrets*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,76 @@
+SentinelGate Documentation Package
+===================================
+
+documentation/
+├── README.md                               # START HERE
+├── PACKAGE_STRUCTURE.txt                   # This file
+│
+├── guides/                                 # User guides
+│   ├── MERCHANT_GETTING_STARTED.md        # For merchants (15 min)
+│   └── DEVELOPER_INTEGRATION_GUIDE.md     # For developers (1-2 hours)
+│
+├── tutorials/                              # Step-by-step tutorials
+│   └── TUTORIAL_MPESA_INTEGRATION.md      # Complete M-Pesa example (30 min)
+│
+├── api-reference/                          # API documentation
+│   └── COMPLETE_API_REFERENCE.md          # Every endpoint documented
+│
+├── troubleshooting/                        # Problem solving
+│   └── COMMON_ISSUES.md                   # Solutions to common problems
+│
+└── security/                               # Security guidelines
+    └── SECURITY_BEST_PRACTICES.md         # CRITICAL - Read before production
+
+Root directory files:
+├── API_DOCUMENTATION.md                    # Quick API reference
+├── API_QUICK_REFERENCE.md                  # Cheat sheet
+├── BUNI_INTEGRATION_CONFIG.md              # BUNI specific config
+├── MERCHANT_ONBOARDING_COMPLETE.md         # Merchant setup summary
+├── DEPLOYMENT_CHECKLIST.md                 # Production checklist
+├── SentinelGate_API.postman_collection.json # Postman collection
+│
+└── code-examples/                          # Working code samples
+    ├── python_example.py                   # Python client
+    ├── php_example.php                     # PHP client
+    └── nodejs_example.js                   # Node.js client
+
+merchant-packages/                          # Merchant credential packages
+├── brooks-ud-zone/
+│   ├── CREDENTIALS.txt
+│   ├── README.md
+│   ├── merchant-integration-guide.md
+│   └── test-payment.sh
+├── brooks-ap-elements/
+│   └── [same structure]
+└── brooks-ip-elements/
+    └── [same structure]
+
+Credential Files (SECURE - DELETE AFTER DOWNLOADING):
+├── merchant-credentials-2026-02-06T22-58-18.txt
+└── merchant-credentials-2026-02-06T22-58-18.json
+
+Total Documentation: ~50 pages
+Time to read all: ~4-5 hours
+Time to basic integration: ~2 hours
+
+QUICK START PATHS:
+==================
+
+For Merchants (Non-Technical):
+→ documentation/README.md
+→ documentation/guides/MERCHANT_GETTING_STARTED.md
+
+For Developers:
+→ documentation/README.md
+→ documentation/guides/DEVELOPER_INTEGRATION_GUIDE.md
+→ documentation/tutorials/TUTORIAL_MPESA_INTEGRATION.md
+→ code-examples/[your language]
+
+For Security Review:
+→ documentation/security/SECURITY_BEST_PRACTICES.md
+
+For Troubleshooting:
+→ documentation/troubleshooting/COMMON_ISSUES.md
+
+For API Reference:
+→ documentation/api-reference/COMPLETE_API_REFERENCE.md
