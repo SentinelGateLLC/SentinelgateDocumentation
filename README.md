@@ -46,7 +46,7 @@ Comprehensive documentation for integrating with SentinelGate.
 **New to SentinelGate?**
 
 1. **Get API Credentials**
-   - Contact: support@sentinelgate.com
+   - Contact: Support@SentinelGAte.Biz
    - Receive: API Key, Secret, Webhook Secret
 
 2. **Choose Your Integration:**
