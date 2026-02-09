@@ -875,13 +875,13 @@ Action:
 ### Getting Help
 
 **Documentation:**
-- API Docs: http://185.229.224.244:3000/docs
+- API Docs: https://sentinelgate.biz/api/docs
 - GitHub: https://github.com/Kamaah518/sentinelgate-docs
 
 **Support:**
 - Email: Support@SentinelGAte.Biz
 - Phone:  + 1 418 476 0308 (24/7)
-- Status Page: http://status.sentinelgate.biz
+- Status Page: https://sentinelgate.biz/api/status
 
 **Include in support request:**
 - Payment ID
@@ -904,7 +904,7 @@ Action:
 
 Import for easy API testing:
 ```
-https://api.sentinelgate.com/postman/collection.json
+https://api.sentinelgate.biz/postman/collection.json
 ```
 
 ### Webhooks Testing
@@ -928,5 +928,5 @@ https://webhook.site/unique-id
 
 **© 2026 SentinelGate Payment Services. All rights reserved.**
 
-For the latest updates, visit: https://docs.sentinelgate.biz
+For the latest updates, visit: https://sentinelgate.biz/api/docs
 
