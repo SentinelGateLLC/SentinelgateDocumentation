@@ -661,7 +661,7 @@ Admin → Apps → SentinelGate → Logs
 
 **Contact Support:**
 
-**Email:** shopify-support@sentinelgate.com
+**Email:** Support@SentinelGAte.Biz
 
 **Include:**
 - Shopify store URL
@@ -948,20 +948,20 @@ shopify app deploy
 ## 📞 Support & Resources
 
 ### Documentation
-- **API Docs:** https://docs.sentinelgate.com/api
-- **Video Tutorials:** https://youtube.com/sentinelgate
-- **Developer Portal:** https://developers.sentinelgate.com
+- **API Docs:** https://sentinelgate.biz/api/docs
+- **Video Tutorials:** https://youtube.com/sentinelgate (Coming Soon)
+- **Developer Portal:** https://developers.sentinelgate.biz (Launching Soon)
 
-### Community
-- **Slack:** sentinelgate.slack.com
-- **Forum:** community.sentinelgate.com
+### Community Coming Soon
+- **Slack:** sentinelgate.slack.biz
+- **Forum:** community.sentinelgate.biz
 - **GitHub:** github.com/sentinelgate
 
 ### Contact
-- **General:** support@sentinelgate.com
-- **Shopify-specific:** shopify-support@sentinelgate.com
-- **Sales:** sales@sentinelgate.com
-- **Emergency:** +254-XXX-XXXXXX (24/7)
+- **General:** Support@SentinelGAte.Biz
+- **Shopify-specific:** Support@SentinelGAte.Biz
+- **Sales:** Sales@SentinelGAte.Biz
+- **Emergency:**  + 1 418 476 0308 (24/7)
 
 ---
 
