@@ -1861,7 +1861,7 @@ Full policy: https://sentinelgate.biz/privacy
 
 **End of Complete Documentation**
 
-*For the latest updates, visit: https://docs.sentinelgate.biz*
+*For the latest updates, visit:  https://sentinelgate.biz/api/docs
 
 ---
 
