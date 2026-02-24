@@ -11,7 +11,7 @@ SentinelGate is a payment gateway that connects online stores to multiple paymen
 | Audience | Start Here |
 |----------|------------|
 | **Merchants** setting up payments for their store | [Merchant Setup Guide](./docs/MERCHANT_GUIDE.md) |
-| **Developers** integrating SentinelGate into WooCommerce | [WooCommerce Integration](./docs/WOOCOMMERCE_INTEGRATION.md) |
+| **Developers** integrating SentinelGate into WooCommerce | [WooCommerce Integration](Woocommerce_integration·MD) |
 | **Developers** integrating SentinelGate into Shopify | [Shopify Integration](./docs/SHOPIFY_INTEGRATION.md) |
 | **Developers** building custom integrations | [API Reference](API_Reference.md) |
 | **Customers** with questions about paying | [Customer FAQ](./docs/CUSTOMER_FAQ.md) |
