@@ -45,12 +45,6 @@ POST /api/payouts/create
 }
 ```
 
-## Providers
-
-- `MPESA_SAFARICOM` - M-Pesa (Kenya)
-- `BUNI` - Cards & MPESA (Kenya, Nigeria)
-- `KAREENHUB` - Bank Transfer (Kenya)
-- `STRIPE` - Cards (Global)
 
 ## Payment Statuses
 
