@@ -1,250 +1,174 @@
-# SentinelGate Payment Platform - API Documentation
+# SentinelGate — API Reference
 
-**Version:** 1.0.0  
-**Base URL:** `http://185.229.224.244:3000`  
-**Last Updated:** February 7, 2026
+**For developers building custom integrations**
 
----
-
-## Table of Contents
-
-1. [Authentication](#authentication)
-2. [Payments API](#payments-api)
-3. [Payouts API](#payouts-api)
-4. [Webhooks](#webhooks)
-5. [Provider Management](#provider-management)
-6. [Error Codes](#error-codes)
-7. [Testing](#testing)
+**Base URL:** `https://sentinelgate.biz`
+**Protocol:** HTTPS only (TLS 1.2+)
+**Format:** JSON
 
 ---
 
 ## Authentication
 
-All API requests must include authentication headers:
+All authenticated endpoints require these headers:
+
 ```http
-X-API-Key: sk_live_your_api_key
-X-API-Secret: secret_your_api_secret
+X-API-Key: sg_key_your_merchant_key
+X-API-Secret: sg_secret_your_merchant_secret
 Content-Type: application/json
 ```
 
-### Example Request
-```bash
-curl -X POST http://185.229.224.244:3000/api/payments/create \
-  -H "X-API-Key: sk_live_d5c4d04e4e1b6deb034ee257ec89ef207b0166e1a32ebd5f77cff774d912a260" \
-  -H "X-API-Secret: secret_89e895e658c8bcd31983e8f6d90ba0c1801c1361cb3fc253e15fec5985fc3248" \
-  -H "Content-Type: application/json" \
-  -d '{"amount_cents": 10000, "currency": "KES"}'
-```
+Contact SentinelGate to obtain your API credentials.
 
 ---
 
-## Payments API
+## Endpoints
 
-### 1. Create Payment
+### POST /v1/hosted/create
 
-Create a new payment transaction.
+Create a hosted payment session. Returns a URL to redirect the customer to.
 
-**Endpoint:** `POST /api/payments/create`
+**Authentication:** Required
 
-#### Request Body
+**Request:**
 
-##### MPESA Payment
 ```json
 {
-  "amount_cents": 10000,
-  "currency": "KES",
-  "provider": "MPESA_SAFARICOM",
-  "metadata": {
-    "phone_number": "254712345678",
-    "description": "Payment for Order #123",
-    "customer_name": "John Doe"
-  },
-  "callback_url": "https://your-site.com/webhook"
+  "amount": "191.00",
+  "currency": "USD",
+  "order_id": "ORD-7700",
+  "description": "Order #7700",
+  "customer_email": "buyer@example.com",
+  "customer_name": "John Doe",
+  "callback_url": "https://yoursite.com/payment-webhook",
+  "return_url": "https://yoursite.com/order-confirmed",
+  "cancel_url": "https://yoursite.com/checkout"
 }
 ```
 
-##### Card Payment (BUNI)
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `amount` | string | Yes | Payment amount (e.g., "191.00") |
+| `currency` | string | Yes | ISO 4217 currency code (USD, GHS, KES, etc.) |
+| `order_id` | string | Yes | Your internal order identifier |
+| `description` | string | No | Payment description shown to customer |
+| `customer_email` | string | No | Customer email for receipts |
+| `customer_name` | string | No | Customer display name |
+| `callback_url` | string | Yes | URL to receive payment status webhook |
+| `return_url` | string | Yes | Where to redirect customer after successful payment |
+| `cancel_url` | string | No | Where to redirect if customer cancels |
+
+**Response (200 OK):**
+
 ```json
 {
-  "amount_cents": 50000,
-  "currency": "KES",
-  "provider": "BUNI",
-  "rail": "CARD",
-  "metadata": {
-    "card_number": "4111111111111111",
-    "expiry_date": "12/25",
+  "sentinel_transaction_id": "sg_txn_1771888643979_cfe07b9d7fe6",
+  "transaction_id": "sg_txn_1771888643979_cfe07b9d7fe6",
+  "session_id": "sg_session_cc7d30bba805dca1c7c0828b",
+  "redirect_url": "https://pay.provider.com/checkout-session-id",
+  "hosted_url": "https://pay.provider.com/checkout-session-id",
+  "status": "pending"
+}
+```
+
+**Next step:** Redirect the customer's browser to `redirect_url`.
+
+---
+
+### POST /v1/charge
+
+Process a direct card charge. **Requires PCI DSS Level 1 compliance.** Most integrations should use `/v1/hosted/create` instead.
+
+**Authentication:** Required
+
+**Request:**
+
+```json
+{
+  "amount": "50.00",
+  "currency": "USD",
+  "order_id": "ORD-001",
+  "customer_email": "buyer@example.com",
+  "card": {
+    "number": "4111111111111111",
     "cvv": "123",
-    "description": "Payment for Order #456"
-  },
-  "callback_url": "https://your-site.com/webhook"
-}
-```
-
-##### Bank Transfer (KareenHub)
-```json
-{
-  "amount_cents": 100000,
-  "currency": "KES",
-  "provider": "KAREENHUB",
-  "metadata": {
-    "account_number": "1234567890",
-    "bank_code": "01",
-    "description": "Payment for Invoice #789"
-  },
-  "callback_url": "https://your-site.com/webhook"
-}
-```
-
-#### Response (Success)
-```json
-{
-  "success": true,
-  "payment_id": "pay_clx1234567890",
-  "merchant_id": "brooks-ud-zone",
-  "amount_cents": 10000,
-  "currency": "KES",
-  "provider": "MPESA_SAFARICOM",
-  "provider_reference": "MPE2026020712345",
-  "status": "PENDING",
-  "created_at": "2026-02-07T03:15:30Z",
-  "next_action": {
-    "type": "WAIT_PROVIDER",
-    "message": "Customer will receive STK push on their phone"
+    "expiry_month": "12",
+    "expiry_year": "26"
   }
 }
 ```
 
-#### Response (Error)
+**Response (200 OK):**
+
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "INVALID_PHONE",
-    "message": "Phone number must be in format 254XXXXXXXXX",
-    "field": "metadata.phone_number"
-  }
+  "sentinel_transaction_id": "sg_txn_...",
+  "status": "captured",
+  "message": "Approved",
+  "provider": "paystack"
+}
+```
+
+Possible statuses: `captured`, `failed`, `3DS_REDIRECT`, `AUTH_REQUIRED`.
+
+If `status` is `3DS_REDIRECT`, redirect the customer to the provided `redirect_url` for 3D Secure verification.
+
+---
+
+### GET /v1/transaction/:txnId
+
+Query the status of a transaction.
+
+**Authentication:** Required
+
+**Request:**
+
+```http
+GET /v1/transaction/sg_txn_1771888643979_cfe07b9d7fe6
+X-API-Key: sg_key_...
+X-API-Secret: sg_secret_...
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "sentinel_transaction_id": "sg_txn_1771888643979_cfe07b9d7fe6",
+  "status": "captured",
+  "amount": 191.00,
+  "currency": "USD",
+  "provider": "hubtel",
+  "created_at": "2026-02-24T06:30:00Z"
 }
 ```
 
 ---
 
-### 2. Get Payment Status
+### POST /v1/refund
 
-Retrieve the status of a payment.
+Process a full or partial refund.
 
-**Endpoint:** `GET /api/payments/{payment_id}`
+**Authentication:** Required
 
-#### Request
-```bash
-curl -X GET http://185.229.224.244:3000/api/payments/pay_clx1234567890 \
-  -H "X-API-Key: sk_live_..." \
-  -H "X-API-Secret: secret_..."
-```
+**Request:**
 
-#### Response
 ```json
 {
-  "payment_id": "pay_clx1234567890",
-  "merchant_id": "brooks-ud-zone",
-  "amount_cents": 10000,
-  "currency": "KES",
-  "provider": "MPESA_SAFARICOM",
-  "provider_reference": "MPE2026020712345",
-  "status": "SUCCESS",
-  "created_at": "2026-02-07T03:15:30Z",
-  "completed_at": "2026-02-07T03:16:45Z",
-  "metadata": {
-    "phone_number": "254712345678",
-    "description": "Payment for Order #123"
-  }
+  "sentinel_transaction_id": "sg_txn_1771888643979_cfe07b9d7fe6",
+  "amount": 50.00,
+  "reason": "Customer requested partial refund"
 }
 ```
 
-**Payment Statuses:**
-- `PENDING` - Payment initiated, awaiting completion
-- `SUCCESS` - Payment completed successfully
-- `FAILED` - Payment failed
-- `CANCELLED` - Payment cancelled by user or system
-- `EXPIRED` - Payment request expired (typically after 5 minutes)
+**Response (200 OK):**
 
----
-
-### 3. List Payments
-
-Retrieve a list of payments with optional filters.
-
-**Endpoint:** `GET /api/payments`
-
-#### Query Parameters
-- `status` - Filter by status (optional)
-- `provider` - Filter by provider (optional)
-- `from_date` - ISO 8601 date (optional)
-- `to_date` - ISO 8601 date (optional)
-- `limit` - Number of results (default: 50, max: 100)
-- `offset` - Pagination offset (default: 0)
-
-#### Request
-```bash
-curl -X GET "http://185.229.224.244:3000/api/payments?status=SUCCESS&limit=10" \
-  -H "X-API-Key: sk_live_..." \
-  -H "X-API-Secret: secret_..."
-```
-
-#### Response
 ```json
 {
-  "payments": [
-    {
-      "payment_id": "pay_clx1234567890",
-      "amount_cents": 10000,
-      "currency": "KES",
-      "status": "SUCCESS",
-      "provider": "MPESA_SAFARICOM",
-      "created_at": "2026-02-07T03:15:30Z"
-    }
-  ],
-  "total": 245,
-  "limit": 10,
-  "offset": 0
-}
-```
-
----
-
-## Payouts API
-
-### 1. Create Payout
-
-Send money to a customer (MPESA only for now).
-
-**Endpoint:** `POST /api/payouts/create`
-
-#### Request Body
-```json
-{
-  "amount_cents": 5000,
-  "currency": "KES",
-  "provider": "MPESA_SAFARICOM",
-  "destination": "254712345678",
-  "metadata": {
-    "reason": "Refund for Order #123",
-    "reference": "REF123456"
-  },
-  "callback_url": "https://your-site.com/webhook"
-}
-```
-
-#### Response
-```json
-{
-  "success": true,
-  "payout_id": "pyt_clx9876543210",
-  "amount_cents": 5000,
-  "currency": "KES",
-  "destination": "254712345678",
-  "provider": "MPESA_SAFARICOM",
-  "status": "PENDING",
-  "created_at": "2026-02-07T03:20:00Z"
+  "sentinel_transaction_id": "sg_txn_1771888643979_cfe07b9d7fe6",
+  "refund_id": "sg_ref_abc123def456",
+  "amount": 50.00,
+  "status": "refunded",
+  "reason": "Customer requested partial refund"
 }
 ```
 
@@ -252,235 +176,212 @@ Send money to a customer (MPESA only for now).
 
 ## Webhooks
 
-SentinelGate sends webhook notifications for payment status updates.
+When a payment status changes, SentinelGate sends an HTTP POST to your `callback_url`.
 
 ### Webhook Payload
+
 ```json
 {
-  "event": "payment.completed",
-  "payment_id": "pay_clx1234567890",
-  "merchant_id": "brooks-ud-zone",
-  "status": "SUCCESS",
-  "amount_cents": 10000,
-  "currency": "KES",
-  "provider": "MPESA_SAFARICOM",
-  "provider_reference": "MPE2026020712345",
-  "timestamp": "2026-02-07T03:16:45Z",
-  "metadata": {
-    "phone_number": "254712345678",
-    "description": "Payment for Order #123"
-  }
+  "sentinel_transaction_id": "sg_txn_1771888643979_cfe07b9d7fe6",
+  "wc_order_id": "7700",
+  "status": "captured",
+  "amount": 191.00,
+  "currency": "USD",
+  "provider": "hubtel",
+  "provider_reference": "hubtel-ref-abc123",
+  "gateway_response": "Approved",
+  "channel": "card"
 }
 ```
 
-### Event Types
-- `payment.pending` - Payment initiated
-- `payment.completed` - Payment successful
-- `payment.failed` - Payment failed
-- `payment.cancelled` - Payment cancelled
-- `payout.pending` - Payout initiated
-- `payout.completed` - Payout successful
-- `payout.failed` - Payout failed
+### Webhook Statuses
 
-### Webhook Verification
+| Status | Meaning | Action |
+|--------|---------|--------|
+| `captured` | Payment successful | Fulfill the order |
+| `failed` | Payment declined | Notify customer, allow retry |
+| `refunded` | Refund processed | Process return |
 
-Verify webhook authenticity using the signature header:
+### Webhook Signature Verification
+
+Webhooks include an `X-Sentinel-Signature` header for verification:
+
+```
+X-Sentinel-Signature: sha256=<hmac_hex_digest>
+```
+
+Verify by computing HMAC-SHA256 of the raw request body using your Webhook Secret:
+
 ```javascript
 const crypto = require('crypto');
 
-function verifyWebhook(payload, signature, webhookSecret) {
-  const hmac = crypto.createHmac('sha256', webhookSecret);
-  const digest = hmac.update(JSON.stringify(payload)).digest('hex');
+function verifyWebhook(rawBody, signature, webhookSecret) {
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', webhookSecret)
+    .update(rawBody)
+    .digest('hex');
   return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(digest)
+    Buffer.from(expected),
+    Buffer.from(signature)
   );
 }
-
-// Express.js example
-app.post('/webhook', express.raw({type: 'application/json'}), (req, res) => {
-  const signature = req.headers['x-webhook-signature'];
-  const webhookSecret = 'whsec_your_webhook_secret';
-  
-  if (!verifyWebhook(req.body, signature, webhookSecret)) {
-    return res.status(401).send('Invalid signature');
-  }
-  
-  const event = JSON.parse(req.body);
-  console.log('Webhook received:', event.event);
-  
-  res.status(200).send('OK');
-});
 ```
+
+```python
+import hmac
+import hashlib
+
+def verify_webhook(raw_body: bytes, signature: str, webhook_secret: str) -> bool:
+    expected = 'sha256=' + hmac.new(
+        webhook_secret.encode(),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+
+```php
+function verifyWebhook($rawBody, $signature, $webhookSecret) {
+    $expected = 'sha256=' . hash_hmac('sha256', $rawBody, $webhookSecret);
+    return hash_equals($expected, $signature);
+}
+```
+
+### Webhook Best Practices
+
+1. **Respond with 200 quickly** — Process the webhook asynchronously if needed. SentinelGate expects a response within 15 seconds.
+2. **Handle duplicates** — Use the `sentinel_transaction_id` to detect duplicate webhooks. Process each transaction only once.
+3. **Verify signatures** — Always verify the `X-Sentinel-Signature` header before processing.
+4. **Use HTTPS** — Your callback URL must use HTTPS.
+5. **Retry behavior** — If your endpoint returns a non-2xx status, SentinelGate will retry up to 3 times with exponential backoff.
 
 ---
 
-## Provider Management
+## Payment Links
 
-### Available Payment Providers
+SentinelGate can generate shareable payment links for invoices, one-time payments, or recurring collection.
 
-#### 1. MPESA Safaricom (Kenya)
-```json
-{
-  "code": "MPESA_SAFARICOM",
-  "display_name": "M-Pesa",
-  "type": "MOBILE_MONEY",
-  "countries": ["KE"],
-  "currencies": ["KES"],
-  "min_amount_cents": 100,
-  "max_amount_cents": 15000000
-}
+### Link Types
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `STANDARD` | Fixed amount, multiple payment methods | General payments |
+| `INVOICE` | Fixed amount, limited methods (Card, Bank, Crypto) | B2B invoices |
+| `GAMING` | Variable amount, card/crypto only | Top-ups, credits |
+
+### Payment Link URLs
+
+```
+https://sentinelgate.biz/pay/<token>
 ```
 
-#### 2. BUNI (Kenya, Nigeria)
-```json
-{
-  "code": "BUNI",
-  "display_name": "Buni",
-  "type": "PSP",
-  "rails": ["CARD", "MOBILE_MONEY"],
-  "countries": ["KE", "NG"],
-  "currencies": ["KES", "NGN"],
-  "min_amount_cents": 100,
-  "max_amount_cents": 100000000
-}
+Each link has a unique token. Customers visit the URL, see the amount and merchant info, choose a payment method, and complete payment.
+
+### QR Codes
+
+Each payment link has an auto-generated QR code:
+
+```
+https://sentinelgate.biz/pay/<token>/qr.png
 ```
 
-#### 3. KareenHub (Kenya)
-```json
-{
-  "code": "KAREENHUB",
-  "display_name": "KareenHub",
-  "type": "BANK_AGGREGATOR",
-  "rails": ["BANK_TRANSFER"],
-  "countries": ["KE"],
-  "currencies": ["KES"],
-  "min_amount_cents": 100,
-  "max_amount_cents": 50000000
-}
-```
-
-#### 4. Stripe (Global)
-```json
-{
-  "code": "STRIPE",
-  "display_name": "Stripe",
-  "type": "PSP",
-  "rails": ["CARD"],
-  "countries": ["GLOBAL"],
-  "currencies": ["USD", "EUR", "GBP", "KES"],
-  "min_amount_cents": 50,
-  "max_amount_cents": 99999999
-}
-```
+Use this in printed invoices, POS displays, or email templates.
 
 ---
 
-## Error Codes
+## Error Handling
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `INVALID_API_KEY` | 401 | API key is missing or invalid |
-| `INVALID_API_SECRET` | 401 | API secret is missing or invalid |
-| `INSUFFICIENT_FUNDS` | 402 | Merchant account has insufficient balance |
-| `INVALID_AMOUNT` | 400 | Amount is below minimum or above maximum |
-| `INVALID_CURRENCY` | 400 | Currency not supported |
-| `INVALID_PHONE` | 400 | Phone number format invalid |
-| `INVALID_PROVIDER` | 400 | Provider code not recognized |
-| `PROVIDER_ERROR` | 502 | Error from payment provider |
-| `PAYMENT_NOT_FOUND` | 404 | Payment ID does not exist |
-| `PAYMENT_EXPIRED` | 410 | Payment request has expired |
-| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
-| `SERVER_ERROR` | 500 | Internal server error |
+### HTTP Status Codes
+
+| Code | Meaning |
+|------|---------|
+| 200 | Success |
+| 400 | Bad request — check the request body |
+| 401 | Unauthorized — invalid or missing API key |
+| 404 | Not found — invalid transaction ID or session |
+| 429 | Rate limited — slow down requests |
+| 500 | Server error — retry after a delay |
 
 ### Error Response Format
+
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "INVALID_PHONE",
-    "message": "Phone number must be in format 254XXXXXXXXX",
-    "field": "metadata.phone_number"
-  }
+  "error": "INVALID_REQUEST",
+  "message": "amount is required"
 }
 ```
 
----
+### Common Errors
 
-## Testing
-
-### Sandbox Mode
-
-Use these test credentials for sandbox testing:
-
-**Test Phone Numbers (MPESA):**
-- Success: `254712345678`
-- Failure: `254700000000`
-- Timeout: `254711111111`
-
-**Test Cards (BUNI):**
-- Success: `4111111111111111` (Visa)
-- Decline: `4000000000000002`
-- Insufficient Funds: `4000000000009995`
-
-### Test Environment
-```
-Base URL: http://185.229.224.244:3000
-```
-
-### Example Test Script
-```bash
-#!/bin/bash
-
-API_KEY="sk_live_your_api_key"
-API_SECRET="secret_your_api_secret"
-BASE_URL="http://185.229.224.244:3000"
-
-# Test MPESA payment
-echo "Testing MPESA payment..."
-curl -X POST "${BASE_URL}/api/payments/create" \
-  -H "X-API-Key: ${API_KEY}" \
-  -H "X-API-Secret: ${API_SECRET}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount_cents": 100,
-    "currency": "KES",
-    "provider": "MPESA_SAFARICOM",
-    "metadata": {
-      "phone_number": "254712345678",
-      "description": "Test Payment"
-    },
-    "callback_url": "https://webhook.site/unique-id"
-  }'
-
-echo -e "\n\nTest complete!"
-```
+| Error Code | Cause | Solution |
+|-----------|-------|---------|
+| `MISSING_API_KEY` | No `X-API-Key` header | Add the header to your request |
+| `INVALID_REQUEST` | Missing required fields | Check required fields in the endpoint docs |
+| `SESSION_EXPIRED` | Payment session timed out | Create a new session |
+| `PROVIDER_ERROR` | Payment provider returned an error | Check `message` field for details |
 
 ---
 
 ## Rate Limits
 
-- **Standard Plan:** 100 requests per minute
-- **Premium Plan:** 1000 requests per minute
+| Endpoint | Limit |
+|----------|-------|
+| `/v1/hosted/create` | 60 requests/minute |
+| `/v1/charge` | 30 requests/minute |
+| `/v1/transaction/:id` | 120 requests/minute |
+| `/v1/refund` | 10 requests/minute |
+| Webhooks (inbound) | 100 requests/minute per IP |
 
-Rate limit headers are included in all responses:
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1707274800
+Exceeding rate limits returns HTTP 429. Implement exponential backoff in your integration.
+
+---
+
+## Testing
+
+### Test Card Numbers
+
+Use these card numbers in sandbox/test mode:
+
+| Card Number | Result |
+|-------------|--------|
+| 4111 1111 1111 1111 | Approved |
+| 4000 0000 0000 0002 | Declined |
+| 4000 0000 0000 3220 | 3D Secure required |
+
+Use any future expiry date and any 3-digit CVV.
+
+**Note:** Test cards only work with providers that have test/sandbox mode enabled. Contact SentinelGate for test environment access.
+
+### Webhook Testing
+
+Use a tool like [webhook.site](https://webhook.site) or [ngrok](https://ngrok.com) to test webhook delivery during development:
+
+```bash
+# Using ngrok to expose a local endpoint
+ngrok http 3000
+
+# Use the ngrok URL as your callback_url
+# https://abc123.ngrok.io/payment-webhook
 ```
 
 ---
 
-## Support
+## SDKs and Libraries
 
-### Technical Support
-- Email: Support@SentinelGAte.Biz
-- Documentation: https://sentinelgate.biz/api/docs
+Official SDKs are planned. In the meantime, use standard HTTP libraries:
 
-### API Status
-- Status Page: https://sentinelgate.biz/api/status
+| Language | Recommended Library |
+|----------|-------------------|
+| JavaScript/Node.js | `axios`, `node-fetch` |
+| Python | `requests`, `httpx` |
+| PHP | `Guzzle`, `cURL` |
+| Ruby | `Faraday`, `HTTParty` |
 
 ---
 
-**© 2026 SentinelGate. All rights reserved.**
+## Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.1.0 | 2026-02-24 | Added hosted checkout with card form, Hubtel integration, payment links |
+| 1.0.0 | 2026-02-07 | Initial API release |
