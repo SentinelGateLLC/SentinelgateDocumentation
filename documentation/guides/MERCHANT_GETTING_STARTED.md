@@ -52,7 +52,7 @@ If your store runs on WordPress + WooCommerce:
 6. Set Integration Mode to **Redirect Hosted Checkout**
 7. Click **Save Changes**
 
-Full guide: [WooCommerce Integration](./WOOCOMMERCE_INTEGRATION.md)
+Full guide: [WooCommerce Integration](Woocommerce_integration·MD)
 
 ### Option B: Shopify (30 minutes)
 
