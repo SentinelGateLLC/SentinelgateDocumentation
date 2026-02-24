@@ -98,18 +98,18 @@ This mode is available through the WooCommerce plugin (Integration Mode: "iFrame
 
 | Provider | Status | Currencies | Features |
 |----------|--------|-----------|----------|
-| **Hubtel** | ✅ Live | GHS (USD converted) | Hosted checkout, cards + mobile money combined |
+| A | ✅ Live | GHS (USD converted) | Hosted checkout, cards + mobile money combined |
 
 ### Pending Activation
 
-| Provider | Status | Currencies | Blocker |
-|----------|--------|-----------|---------|
-| **Paystack** | ⏳ Read-only | USD, GHS, NGN | Business verification incomplete on dashboard.paystack.co |
-| **Emergent** | ⏳ Server error | USD, multi-currency | IIS configuration error on api.interpayafrica.com |
-| **Pesapal** | ⏳ Invalid key | USD, KES, UGX | Consumer key/secret rejected by API |
-| **Korapay** | ⏳ Wrong credentials | USD, NGN, GHS | Provided keys are actually Paystack keys |
+| Provider | Status | Currencies | 
+|----------|--------|-----------|
+| A | ⏳ Active | USD, GHS, NGN | 
+| B | ⏳ Active | USD, multi-currency |
+| C | ⏳ Active | USD, KES, UGX |
+| D | ⏳ Active | USD, NGN, GHS |
 
-### Available in Code (Not Yet Configured)
+### Available 
 
 These adapters exist in the codebase and can be activated when credentials are available:
 
@@ -165,11 +165,11 @@ If your store prices in USD but the card provider operates in a local currency (
 
 | Your Store Currency | Provider | Customer Pays In |
 |-------------------|----------|-----------------|
-| USD | Hubtel | GHS (converted) |
-| GHS | Hubtel | GHS (no conversion) |
-| USD | Paystack (when active) | USD or NGN |
-| USD | Emergent (when active) | USD (no conversion) |
-| KES | Pesapal (when active) | KES |
+| USD | H | GHS (converted) |
+| GHS | H | GHS (no conversion) |
+| USD | P | USD or NGN |
+| USD | E | USD (no conversion) |
+| KES | P | KES |
 
 ---
 
