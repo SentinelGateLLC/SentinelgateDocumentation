@@ -68,7 +68,7 @@ Full guide: [Shopify Integration](./SHOPIFY_INTEGRATION.md)
 
 ### Option C: Custom Website (Developer Required)
 
-If you have a custom-built website, share the [API Reference](./API_REFERENCE.md) with your developer. They will integrate using our REST API.
+If you have a custom-built website, share the [API Reference](API_Reference.md) with your developer. They will integrate using our REST API.
 
 ### Option D: Payment Links (No Website Needed)
 
