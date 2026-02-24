@@ -1,147 +1,143 @@
-# SentinelGate Payment Platform Documentation
+# SentinelGate PSP
 
-Comprehensive documentation for integrating with SentinelGate.
+**Secure Payment Gateway Platform**
 
----
-
-## 📚 Documentation Guides
-
-### 1. [Mobile Money Integration Guide](guides/MOBILE_MONEY_GUIDE.md)
-**For:** Business owners, developers, end users  
-**Topics:** M-Pesa, MTN Momo, Airtel Money, Hubtel, multi-country support  
-**Length:** 12,000+ words
-
-**Quick links:**
-- [For Business Owners](guides/MOBILE_MONEY_GUIDE.md#for-business-owners)
-- [For Developers](guides/MOBILE_MONEY_GUIDE.md#for-developers)
-- [Code Examples](guides/MOBILE_MONEY_GUIDE.md#code-examples)
-- [Testing](guides/MOBILE_MONEY_GUIDE.md#testing)
-
-### 2. [Shopify Integration Guide](guides/SHOPIFY_INTEGRATION_GUIDE.md)
-**For:** Shopify store owners, developers  
-**Topics:** Plugin installation, configuration, testing, customization  
-**Length:** 8,000+ words
-
-**Quick links:**
-- [Installation](guides/SHOPIFY_INTEGRATION_GUIDE.md#installation)
-- [Configuration](guides/SHOPIFY_INTEGRATION_GUIDE.md#configuration)
-- [Going Live](guides/SHOPIFY_INTEGRATION_GUIDE.md#going-live)
-- [Troubleshooting](guides/SHOPIFY_INTEGRATION_GUIDE.md#troubleshooting)
-
-### 3. [Card Processing Guide](guides/CARD_PROCESSING_GUIDE.md)
-**For:** Business owners, developers, compliance teams  
-**Topics:** Card payments, PCI compliance, 3D Secure, fraud prevention  
-**Length:** 15,000+ words
-
-**Quick links:**
-- [Integration Methods](guides/CARD_PROCESSING_GUIDE.md#integration-methods)
-- [Security & PCI](guides/CARD_PROCESSING_GUIDE.md#security--pci-compliance)
-- [3D Secure](guides/CARD_PROCESSING_GUIDE.md#3d-secure-authentication)
-- [Testing](guides/CARD_PROCESSING_GUIDE.md#testing)
+SentinelGate is a payment gateway that connects online stores to multiple payment providers through a single, unified API. It supports card payments, mobile money, and bank transfers across multiple currencies.
 
 ---
 
-## 🚀 Quick Start
+## Who Is This For?
 
-**New to SentinelGate?**
-
-1. **Get API Credentials**
-   - Contact: Support@SentinelGAte.Biz
-   - Receive: API Key, Secret, Webhook Secret
-
-2. **Choose Your Integration:**
-   - **E-commerce platform?** → [Shopify Guide](guides/SHOPIFY_INTEGRATION_GUIDE.md)
-   - **Mobile payments in Africa?** → [Mobile Money Guide](guides/MOBILE_MONEY_GUIDE.md)
-   - **Credit/debit cards?** → [Card Processing Guide](guides/CARD_PROCESSING_GUIDE.md)
-
-3. **Test Integration**
-   - Use sandbox credentials
-   - Test with provided test cards/numbers
-   - Verify webhooks
-
-4. **Go Live**
-   - Switch to production credentials
-   - Complete compliance requirements
-   - Monitor first transactions
+| Audience | Start Here |
+|----------|------------|
+| **Merchants** setting up payments for their store | [Merchant Setup Guide](./docs/MERCHANT_GUIDE.md) |
+| **Developers** integrating SentinelGate into WooCommerce | [WooCommerce Integration](./docs/WOOCOMMERCE_INTEGRATION.md) |
+| **Developers** integrating SentinelGate into Shopify | [Shopify Integration](./docs/SHOPIFY_INTEGRATION.md) |
+| **Developers** building custom integrations | [API Reference](./docs/API_REFERENCE.md) |
+| **Customers** with questions about paying | [Customer FAQ](./docs/CUSTOMER_FAQ.md) |
 
 ---
 
-## 📖 Documentation Structure
+## How It Works
+
+SentinelGate sits between your online store and payment providers. Your store talks to SentinelGate, and SentinelGate handles the complexity of routing payments to the right provider.
+
 ```
-github-docs-package/
-├── README.md (this file)
-├── guides/
-│   ├── MOBILE_MONEY_GUIDE.md
-│   ├── SHOPIFY_INTEGRATION_GUIDE.md
-│   └── CARD_PROCESSING_GUIDE.md
-├── integration/
-├── tutorials/
-├── examples/
-└── troubleshooting/
+┌─────────────────┐       ┌──────────────────┐       ┌─────────────────┐
+│   Your Store    │       │   SentinelGate   │       │    Providers    │
+│                 │       │                  │       │                 │
+│  WooCommerce    │──────▶│  Hosted Checkout  │──────▶│  Hubtel         │
+│  Shopify        │       │  Payment Links   │       │  Pesapal        │
+│  Custom Site    │       │  Webhooks        │       │  Paystack       │
+│                 │◀──────│  Order Updates   │◀──────│  Emergent       │
+└─────────────────┘       └──────────────────┘       │  BUNI/M-Pesa   │
+                                                     └─────────────────┘
 ```
 
----
+**For the merchant:** You install a plugin or add a few lines of code. SentinelGate handles everything else.
 
-## 🎯 By User Type
+**For the customer:** They see a clean, secure payment page. Enter card details or use mobile money. Get a confirmation.
 
-### For Business Owners
-- [Why Accept Mobile Money?](guides/MOBILE_MONEY_GUIDE.md#for-business-owners)
-- [Why Use SentinelGate for Cards?](guides/CARD_PROCESSING_GUIDE.md#for-business-owners)
-- [Shopify Store Setup](guides/SHOPIFY_INTEGRATION_GUIDE.md#for-store-owners)
-
-### For Developers
-- [Mobile Money API](guides/MOBILE_MONEY_GUIDE.md#for-developers)
-- [Card Payment API](guides/CARD_PROCESSING_GUIDE.md#for-developers)
-- [Shopify Plugin Development](guides/SHOPIFY_INTEGRATION_GUIDE.md#for-developers)
-
-### For End Users (Customers)
-- [How to Pay with Mobile Money](guides/MOBILE_MONEY_GUIDE.md#for-end-users)
-- [How to Pay with Cards](guides/CARD_PROCESSING_GUIDE.md#for-end-users)
-
-### For Compliance Teams
-- [PCI Compliance](guides/CARD_PROCESSING_GUIDE.md#for-compliance-teams)
-- [Security Best Practices](guides/CARD_PROCESSING_GUIDE.md#security--pci-compliance)
+**For the developer:** One API, multiple providers. Automatic failover, webhook callbacks, idempotent processing.
 
 ---
 
-## 💡 Key Features
+## Supported Platforms
 
-✅ **Multi-Provider Support**
-- BUNI, PesaPal, Emergent, Hubtel
-- Automatic failover
-- Smart routing
-
-✅ **Comprehensive Coverage**
-- Mobile money: 8+ countries
-- Cards: Global acceptance
-- Bank transfers: Local options
-
-✅ **Developer-Friendly**
-- RESTful API
-- Webhooks
-- SDKs (Node.js, Python, PHP)
-- Comprehensive documentation
-
-✅ **Secure & Compliant**
-- PCI DSS Level 1
-- 3D Secure 2.0
-- Fraud detection
-- Data encryption
+| Platform | Integration Type | Setup Time |
+|----------|-----------------|------------|
+| **WooCommerce** | Plugin (zip upload) | ~10 minutes |
+| **Shopify** | Webhook middleware + redirect script | ~30 minutes |
+| **Custom Website** | REST API | Varies |
 
 ---
 
-## 📞 Support
+## Supported Payment Methods
 
-**Email:** Support@SentinelGAte.Biz  
-**Website:** https://sentinelgate.biz 
-**API Docs:** https://sentinelgate.biz/api/docs
-**Status Page:** https://sentinelgate.biz/api/status 
-
-**Emergency Support (24/7):**  + 1 418 476 0308
+| Method | Currencies | Providers |
+|--------|-----------|-----------|
+| **Visa / Mastercard** | USD, GHS | Hubtel, Paystack, Emergent |
+| **Mobile Money (Ghana)** | GHS | Hubtel |
+| **M-Pesa (Kenya)** | KES | BUNI/KCB |
+| **Mobile Money (East Africa)** | KES, UGX, TZS | Pesapal |
+| **Bank Transfer** | USD, NGN | Paystack, Korapay |
 
 ---
 
-**Last Updated:** February 8, 2026  
-**Version:** 1.0.0  
+## Quick Start
 
-**© 2026 SentinelGate Payment Services. All rights reserved.**
+### WooCommerce (Fastest)
+
+1. Download `sentinelgate-psp.zip`
+2. WordPress Admin → Plugins → Upload → Activate
+3. WooCommerce → Settings → Payments → SentinelGate PSP
+4. Enter your API Key, Secret, and Webhook Secret
+5. Save → Test a purchase
+
+Full guide: [WooCommerce Integration](./docs/WOOCOMMERCE_INTEGRATION.md)
+
+### Shopify
+
+1. Create a Custom App in Shopify with order permissions
+2. Register your store with SentinelGate
+3. Add webhooks pointing to SentinelGate
+4. Add redirect script to checkout
+5. Test an order
+
+Full guide: [Shopify Integration](./docs/SHOPIFY_INTEGRATION.md)
+
+### Custom Integration
+
+```bash
+curl -X POST https://sentinelgate.biz/v1/hosted/create \
+  -H "X-API-Key: your_api_key" \
+  -H "X-API-Secret: your_api_secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "50.00",
+    "currency": "USD",
+    "order_id": "ORD-001",
+    "customer_email": "buyer@example.com",
+    "callback_url": "https://yoursite.com/payment-callback",
+    "return_url": "https://yoursite.com/thank-you"
+  }'
+```
+
+Redirect the customer to the `redirect_url` in the response. Full guide: [API Reference](./docs/API_REFERENCE.md)
+
+---
+
+## Security
+
+SentinelGate is built with security as a core requirement:
+
+- **HTTPS/TLS 1.3** — All communication is encrypted in transit
+- **AES-256-GCM** — Sensitive credentials encrypted at rest
+- **HMAC-SHA256** — All webhooks are signature-verified
+- **No card storage** — Card details are never stored on SentinelGate servers
+- **PCI Compliant** — Hosted checkout means merchants don't need PCI certification
+- **Idempotent processing** — Duplicate webhooks are safely ignored
+- **Rate limiting** — All endpoints protected against abuse
+
+---
+
+## Support
+
+| Channel | Details |
+|---------|---------|
+| **Email** | support@sentinelgate.biz |
+| **Documentation** | https://sentinelgate.biz/docs |
+| **Status Page** | https://sentinelgate.biz/status |
+
+---
+
+## Documentation Index
+
+```
+docs/
+├── MERCHANT_GUIDE.md           # For store owners: setup, dashboard, managing payments
+├── WOOCOMMERCE_INTEGRATION.md  # WooCommerce plugin installation and configuration
+├── SHOPIFY_INTEGRATION.md      # Shopify webhook and redirect setup
+├── API_REFERENCE.md            # Full API documentation for developers
+└── CUSTOMER_FAQ.md             # FAQ for end customers making payments
+```
