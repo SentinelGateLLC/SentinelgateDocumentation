@@ -1,8 +1,8 @@
 # Developer Integration Guide
 
-**For:** Software Developers & Technical Teams  
-**Level:** Intermediate to Advanced  
-**Time to Complete:** 1-2 hours
+**For:** Software Developers & Technical Teams
+**Level:** Intermediate to Advanced
+**Last Updated:** February 24, 2026
 
 ---
 
@@ -17,46 +17,53 @@
 7. [Testing Strategy](#testing-strategy)
 8. [Production Deployment](#production-deployment)
 9. [Best Practices](#best-practices)
+10. [Advanced Topics](#advanced-topics)
 
 ---
 
 ## Quick Start
 
-### 1. Prerequisites
+### Prerequisites
 
-- API credentials (API Key, API Secret, Webhook Secret)
-- Development environment with HTTP client
-- SSL/TLS support for webhooks (production)
-- Server that can receive HTTP POST requests
+- SentinelGate merchant credentials (API Key, API Secret, Webhook Secret)
+- Development environment with HTTP client (Node.js, Python, PHP, etc.)
+- SSL/TLS certificate on your server (HTTPS required for webhooks)
+- Server capable of receiving HTTP POST requests
 
-### 2. First API Call (cURL)
+### Your First Payment (30 seconds)
+
+Create a hosted checkout session and redirect the customer:
+
 ```bash
-curl -X POST http://185.229.224.244:3000/api/payments/create \
-  -H "X-API-Key: sk_live_your_api_key" \
-  -H "X-API-Secret: secret_your_api_secret" \
+curl -X POST https://sentinelgate.biz/v1/hosted/create \
+  -H "X-API-Key: sg_key_yourstore_abc123" \
+  -H "X-API-Secret: sg_secret_yourstore_def456" \
   -H "Content-Type: application/json" \
   -d '{
-    "amount_cents": 10000,
-    "currency": "KES",
-    "provider": "MPESA_SAFARICOM",
-    "metadata": {
-      "phone_number": "254712345678",
-      "description": "Test Payment"
-    },
-    "callback_url": "https://your-domain.com/webhook"
+    "amount": "50.00",
+    "currency": "USD",
+    "order_id": "ORD-001",
+    "description": "Test Payment",
+    "customer_email": "buyer@example.com",
+    "callback_url": "https://yoursite.com/webhook/sentinelgate",
+    "return_url": "https://yoursite.com/order-confirmed",
+    "cancel_url": "https://yoursite.com/checkout"
   }'
 ```
 
-**Expected Response:**
+**Response:**
+
 ```json
 {
-  "success": true,
-  "payment_id": "pay_clx1234567890",
-  "status": "PENDING",
-  "provider_reference": "MPE2026020712345",
-  "created_at": "2026-02-07T03:15:30Z"
+  "sentinel_transaction_id": "sg_txn_1771888643979_cfe07b9d7fe6",
+  "session_id": "sg_session_cc7d30bba805dca1c7c0828b",
+  "redirect_url": "https://pay.hubtel.com/dcbe69362cec4c3ba9b5bc717518ae71",
+  "hosted_url": "https://pay.hubtel.com/dcbe69362cec4c3ba9b5bc717518ae71",
+  "status": "pending"
 }
 ```
+
+Redirect the customer to `redirect_url`. They pay on the hosted page. You receive a webhook when payment completes.
 
 ---
 
@@ -65,254 +72,454 @@ curl -X POST http://185.229.224.244:3000/api/payments/create \
 ### Header-Based Authentication
 
 All API requests require two headers:
+
 ```http
-X-API-Key: sk_live_your_api_key_here
-X-API-Secret: secret_your_api_secret_here
+X-API-Key: sg_key_yourstore_abc123
+X-API-Secret: sg_secret_yourstore_def456
+Content-Type: application/json
 ```
 
-### Security Best Practices
+### Environment Variables
 
-1. **Never** expose credentials in client-side code
-2. **Always** use HTTPS in production
-3. **Store** credentials in environment variables
-4. **Rotate** credentials every 90 days
-5. **Use** different credentials for test vs production
-
-### Environment Variables Setup
 ```bash
-# .env file
-SENTINELGATE_API_KEY=sk_live_...
-SENTINELGATE_API_SECRET=secret_...
-SENTINELGATE_WEBHOOK_SECRET=whsec_...
-SENTINELGATE_BASE_URL=http://185.229.224.244:3000
+# .env
+SENTINELGATE_API_KEY=sg_key_yourstore_abc123
+SENTINELGATE_API_SECRET=sg_secret_yourstore_def456
+SENTINELGATE_WEBHOOK_SECRET=sg_whsec_yourstore_ghi789
+SENTINELGATE_BASE_URL=https://sentinelgate.biz
 ```
+
+### Security Rules
+
+1. **Never** expose credentials in client-side / frontend code
+2. **Always** use HTTPS — SentinelGate rejects plain HTTP in production
+3. **Store** credentials in environment variables, not source code
+4. **Rotate** credentials if a team member leaves or a breach is suspected
+5. **Never** commit `.env` files to Git
 
 ---
 
 ## API Architecture
 
 ### Base URL
+
 ```
-Production: http://185.229.224.244:3000
-Sandbox: http://185.229.224.244:3000 (same, use test credentials)
+Production:  https://sentinelgate.biz
 ```
 
-### RESTful Endpoints
-```
-POST   /api/payments/create       - Create a payment
-GET    /api/payments/:id          - Get payment status
-GET    /api/payments              - List payments
-POST   /api/payouts/create        - Create a payout
-GET    /api/payouts/:id           - Get payout status
-```
+All endpoints are served over HTTPS via Apache reverse proxy on port 443. The underlying service runs on port 3003 internally.
+
+### Core Endpoints
+
+| Method | Endpoint | Auth | Purpose |
+|--------|----------|------|---------|
+| POST | `/v1/hosted/create` | Required | Create hosted payment session (recommended) |
+| GET | `/v1/hosted/pay/:sessionId` | None | Hosted payment page (customer-facing) |
+| POST | `/v1/charge` | Required | Direct card charge (PCI DSS required) |
+| GET | `/v1/transaction/:txnId` | Required | Query transaction status |
+| POST | `/v1/refund` | Required | Process refund |
+
+### Webhook Endpoints (Provider Callbacks)
+
+| Endpoint | Provider |
+|----------|----------|
+| `/hubtel/callback` | Hubtel (Ghana cards + mobile money) |
+| `/buni/mpesa/callback` | BUNI/KCB M-Pesa (Kenya) |
+| `/pesapal/callback` | Pesapal (East Africa) |
+| `/paystack/callback` | Paystack (Africa) |
+| `/emergent/callback` | Emergent/InterPay (Cards) |
+| `/korapay/callback` | Korapay (Cards + Mobile) |
+
+### Shopify Middleware Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /webhooks/shopify/order-created` | Order creation webhook |
+| `POST /shopify/webhook/orders/paid` | Order paid notification |
+| `POST /shopify/webhook/orders/cancelled` | Order cancellation |
+| `POST /shopify/webhook/refunds/create` | Refund processing |
+| `GET /pay/shopify-redirect` | Customer payment redirect |
+
+### Payment Links
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /pay/:token` | Payment link checkout page |
+| `GET /pay/:token/qr.png` | QR code for payment link |
 
 ### Request/Response Format
 
 - **Content-Type:** `application/json`
 - **Character Encoding:** UTF-8
-- **Date Format:** ISO 8601 (e.g., `2026-02-07T03:15:30Z`)
-- **Amount Format:** Integer in cents (10000 = 100.00 KES)
+- **Date Format:** ISO 8601 (`2026-02-24T06:30:00Z`)
+- **Amount Format:** String in decimal dollars (`"191.00"`, not cents)
 
 ---
 
 ## Payment Integration
 
-### Payment Flow Diagram
+### Recommended Flow: Hosted Checkout
+
+This is the safest and simplest integration. No PCI compliance required on your side.
+
 ```
 ┌─────────────┐
-│   Customer  │
+│  Customer    │  1. Places order on your site
 └──────┬──────┘
-       │ Initiates payment
+       │
        ▼
 ┌─────────────┐
-│ Your Server │─────┐
-└──────┬──────┘     │
-       │            │ 1. Create payment request
-       │            ▼
-       │     ┌─────────────┐
-       │     │ SentinelGate│
-       │     └──────┬──────┘
-       │            │ 2. Forward to provider
-       │            ▼
-       │     ┌─────────────┐
-       │     │  Provider   │
-       │     │ (M-Pesa/    │
-       │     │  BUNI)      │
-       │     └──────┬──────┘
-       │            │ 3. Process payment
-       │            ▼
-       │     ┌─────────────┐
-       │     │  Customer   │
-       │     │  Bank/Phone │
-       │     └──────┬──────┘
-       │            │ 4. Confirmation
-       │            ▼
-       │     ┌─────────────┐
-       │     │ SentinelGate│
-       │     └──────┬──────┘
-       │            │ 5. Webhook notification
-       │            ▼
-       │     ┌─────────────┐
-       └─────│ Your Server │
-             └─────────────┘
+│ Your Server  │  2. POST /v1/hosted/create
+└──────┬──────┘     (amount, order_id, callback_url, return_url)
+       │
+       ▼
+┌─────────────┐
+│ SentinelGate │  3. Returns redirect_url
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Payment     │  4. Customer enters card/mobile money details
+│  Page        │     3D Secure / OTP handled automatically
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  Provider    │  5. Hubtel / Pesapal / Paystack processes payment
+│  (Hubtel,    │
+│   BUNI, etc) │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ SentinelGate │  6. Webhook POST to your callback_url
+└──────┬──────┘     { status: "captured", sentinel_transaction_id, amount }
+       │
+       ├──────────────────────────┐
+       ▼                          ▼
+┌─────────────┐          ┌─────────────┐
+│ Your Server  │          │  Customer    │
+│ Updates order│          │  Redirected  │
+│ status       │          │  to return_url│
+└─────────────┘          └─────────────┘
 ```
 
-### Implementation Steps
+### Implementation: Node.js
 
-#### Step 1: Create Payment
 ```javascript
 const axios = require('axios');
 
-async function createPayment(orderAmount, customerPhone, orderRef) {
+const SENTINEL_BASE = process.env.SENTINELGATE_BASE_URL; // https://sentinelgate.biz
+const API_KEY = process.env.SENTINELGATE_API_KEY;        // sg_key_...
+const API_SECRET = process.env.SENTINELGATE_API_SECRET;  // sg_secret_...
+
+// Step 1: Create a payment session
+async function createPaymentSession(order) {
   const response = await axios.post(
-    `${process.env.SENTINELGATE_BASE_URL}/api/payments/create`,
+    `${SENTINEL_BASE}/v1/hosted/create`,
     {
-      amount_cents: orderAmount * 100, // Convert to cents
-      currency: 'KES',
-      provider: 'MPESA_SAFARICOM',
-      metadata: {
-        phone_number: customerPhone,
-        description: `Payment for order ${orderRef}`,
-        order_reference: orderRef
-      },
-      callback_url: `${process.env.YOUR_DOMAIN}/webhook/sentinelgate`
+      amount: order.total.toFixed(2),       // "191.00"
+      currency: order.currency,              // "USD"
+      order_id: order.id,                    // "ORD-7700"
+      description: `Order #${order.id}`,
+      customer_email: order.customerEmail,
+      customer_name: order.customerName,
+      callback_url: `${process.env.YOUR_DOMAIN}/webhook/sentinelgate`,
+      return_url: `${process.env.YOUR_DOMAIN}/order/${order.id}/confirmed`,
+      cancel_url: `${process.env.YOUR_DOMAIN}/checkout`
     },
     {
       headers: {
-        'X-API-Key': process.env.SENTINELGATE_API_KEY,
-        'X-API-Secret': process.env.SENTINELGATE_API_SECRET,
+        'X-API-Key': API_KEY,
+        'X-API-Secret': API_SECRET,
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 30000
     }
   );
-  
+
   return response.data;
 }
-```
 
-#### Step 2: Store Payment Reference
-```javascript
-// Save to database
-await db.orders.update({
-  where: { id: orderRef },
-  data: {
-    payment_id: response.payment_id,
-    payment_status: 'PENDING',
-    provider_reference: response.provider_reference
-  }
+// Step 2: Redirect customer
+app.post('/checkout', async (req, res) => {
+  const order = await createOrder(req.body);
+
+  const payment = await createPaymentSession(order);
+
+  // Save transaction ID to order
+  await db.orders.update({
+    where: { id: order.id },
+    data: {
+      sentinelTxnId: payment.sentinel_transaction_id,
+      paymentStatus: 'pending'
+    }
+  });
+
+  // Redirect customer to payment page
+  res.redirect(302, payment.redirect_url);
 });
 ```
 
-#### Step 3: Handle Webhook (see next section)
+### Implementation: Python
+
+```python
+import requests
+import os
+
+SENTINEL_BASE = os.environ['SENTINELGATE_BASE_URL']
+API_KEY = os.environ['SENTINELGATE_API_KEY']
+API_SECRET = os.environ['SENTINELGATE_API_SECRET']
+
+def create_payment_session(order):
+    response = requests.post(
+        f"{SENTINEL_BASE}/v1/hosted/create",
+        json={
+            "amount": f"{order['total']:.2f}",
+            "currency": order['currency'],
+            "order_id": order['id'],
+            "description": f"Order #{order['id']}",
+            "customer_email": order['email'],
+            "callback_url": f"{os.environ['YOUR_DOMAIN']}/webhook/sentinelgate",
+            "return_url": f"{os.environ['YOUR_DOMAIN']}/order/{order['id']}/confirmed",
+            "cancel_url": f"{os.environ['YOUR_DOMAIN']}/checkout"
+        },
+        headers={
+            "X-API-Key": API_KEY,
+            "X-API-Secret": API_SECRET,
+            "Content-Type": "application/json"
+        },
+        timeout=30
+    )
+    response.raise_for_status()
+    return response.json()
+```
+
+### Implementation: PHP
+
+```php
+function createPaymentSession($order) {
+    $ch = curl_init();
+
+    curl_setopt_array($ch, [
+        CURLOPT_URL => getenv('SENTINELGATE_BASE_URL') . '/v1/hosted/create',
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => [
+            'X-API-Key: ' . getenv('SENTINELGATE_API_KEY'),
+            'X-API-Secret: ' . getenv('SENTINELGATE_API_SECRET'),
+            'Content-Type: application/json'
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'amount' => number_format($order['total'], 2, '.', ''),
+            'currency' => $order['currency'],
+            'order_id' => $order['id'],
+            'description' => 'Order #' . $order['id'],
+            'customer_email' => $order['email'],
+            'callback_url' => getenv('YOUR_DOMAIN') . '/webhook/sentinelgate',
+            'return_url' => getenv('YOUR_DOMAIN') . '/order/' . $order['id'] . '/confirmed',
+            'cancel_url' => getenv('YOUR_DOMAIN') . '/checkout'
+        ])
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200) {
+        throw new Exception("Payment creation failed: $response");
+    }
+
+    return json_decode($response, true);
+}
+```
 
 ---
 
 ## Webhook Implementation
 
-### Setting Up Webhook Endpoint
+### Setting Up Your Webhook Endpoint
+
+When a payment completes (or fails), SentinelGate sends a POST request to your `callback_url`.
+
+**Webhook Payload:**
+
+```json
+{
+  "sentinel_transaction_id": "sg_txn_1771888643979_cfe07b9d7fe6",
+  "wc_order_id": "7700",
+  "status": "captured",
+  "amount": 191.00,
+  "currency": "USD",
+  "provider": "hubtel",
+  "provider_reference": "hubtel-ref-abc123",
+  "gateway_response": "Approved",
+  "channel": "card"
+}
+```
+
+**Webhook Statuses:**
+
+| Status | Meaning | Action |
+|--------|---------|--------|
+| `captured` | Payment successful | Mark order as paid, fulfill |
+| `failed` | Payment declined | Notify customer, allow retry |
+| `refunded` | Refund processed | Process return |
+
+### Signature Verification
+
+Every webhook includes an `X-Sentinel-Signature` header. **Always verify before processing.**
+
+**Node.js:**
+
 ```javascript
 const express = require('express');
 const crypto = require('crypto');
 
-const app = express();
+const WEBHOOK_SECRET = process.env.SENTINELGATE_WEBHOOK_SECRET;
 
-// IMPORTANT: Use express.raw() for webhook signature verification
-app.post('/webhook/sentinelgate', 
-  express.raw({type: 'application/json'}),
+// CRITICAL: Use express.raw() to get the raw body for signature verification
+app.post('/webhook/sentinelgate',
+  express.raw({ type: 'application/json' }),
   async (req, res) => {
-    try {
-      // 1. Verify webhook signature
-      const signature = req.headers['x-webhook-signature'];
-      const isValid = verifyWebhookSignature(
-        req.body,
-        signature,
-        process.env.SENTINELGATE_WEBHOOK_SECRET
-      );
-      
-      if (!isValid) {
-        return res.status(401).send('Invalid signature');
-      }
-      
-      // 2. Parse webhook payload
-      const event = JSON.parse(req.body);
-      
-      // 3. Handle different event types
-      switch (event.event) {
-        case 'payment.completed':
-          await handlePaymentCompleted(event);
-          break;
-        case 'payment.failed':
-          await handlePaymentFailed(event);
-          break;
-        case 'payment.cancelled':
-          await handlePaymentCancelled(event);
-          break;
-      }
-      
-      // 4. Acknowledge receipt (important!)
-      res.status(200).send('OK');
-      
-    } catch (error) {
-      console.error('Webhook error:', error);
-      res.status(500).send('Error processing webhook');
+    // 1. Verify signature
+    const signature = req.headers['x-sentinel-signature'];
+    if (!verifySignature(req.body, signature, WEBHOOK_SECRET)) {
+      return res.status(401).send('Invalid signature');
     }
+
+    // 2. Respond immediately (SentinelGate expects response within 15s)
+    res.status(200).send('OK');
+
+    // 3. Parse and process asynchronously
+    const event = JSON.parse(req.body);
+    processWebhook(event).catch(console.error);
   }
 );
 
-function verifyWebhookSignature(payload, signature, secret) {
-  const hmac = crypto.createHmac('sha256', secret);
-  const digest = hmac.update(payload).digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(digest)
-  );
+function verifySignature(rawBody, signature, secret) {
+  if (!signature) return false;
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex');
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(expected),
+      Buffer.from(signature)
+    );
+  } catch {
+    return false;
+  }
 }
 
-async function handlePaymentCompleted(event) {
-  // Update order status in database
-  await db.orders.update({
-    where: { payment_id: event.payment_id },
-    data: {
-      payment_status: 'COMPLETED',
-      paid_at: new Date(event.timestamp),
-      provider_reference: event.provider_reference
-    }
-  });
-  
-  // Send confirmation email
-  await sendOrderConfirmationEmail(event.payment_id);
-  
-  // Update inventory
-  await updateInventory(event.payment_id);
+async function processWebhook(event) {
+  const { sentinel_transaction_id, status, amount, wc_order_id } = event;
+
+  switch (status) {
+    case 'captured':
+      await db.orders.update({
+        where: { id: wc_order_id },
+        data: {
+          paymentStatus: 'paid',
+          sentinelTxnId: sentinel_transaction_id,
+          paidAt: new Date()
+        }
+      });
+      await sendOrderConfirmationEmail(wc_order_id);
+      break;
+
+    case 'failed':
+      await db.orders.update({
+        where: { id: wc_order_id },
+        data: { paymentStatus: 'failed' }
+      });
+      break;
+
+    case 'refunded':
+      await db.orders.update({
+        where: { id: wc_order_id },
+        data: { paymentStatus: 'refunded' }
+      });
+      break;
+  }
 }
 ```
 
-### Webhook Event Types
-```typescript
-type WebhookEvent = {
-  event: 'payment.pending' | 'payment.completed' | 'payment.failed' | 'payment.cancelled';
-  payment_id: string;
-  merchant_id: string;
-  status: string;
-  amount_cents: number;
-  currency: string;
-  provider: string;
-  provider_reference: string;
-  timestamp: string; // ISO 8601
-  metadata: Record<string, any>;
-}
+**Python:**
+
+```python
+import hmac
+import hashlib
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route('/webhook/sentinelgate', methods=['POST'])
+def handle_webhook():
+    # 1. Verify signature
+    signature = request.headers.get('X-Sentinel-Signature', '')
+    raw_body = request.get_data()
+
+    if not verify_signature(raw_body, signature, os.environ['SENTINELGATE_WEBHOOK_SECRET']):
+        return 'Invalid signature', 401
+
+    # 2. Parse event
+    event = request.get_json()
+
+    # 3. Process
+    if event['status'] == 'captured':
+        mark_order_as_paid(event['wc_order_id'], event['sentinel_transaction_id'])
+    elif event['status'] == 'failed':
+        mark_order_as_failed(event['wc_order_id'])
+
+    return 'OK', 200
+
+def verify_signature(raw_body, signature, secret):
+    expected = 'sha256=' + hmac.new(
+        secret.encode(),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
 ```
 
-### Webhook Retry Logic
+**PHP:**
 
-SentinelGate will retry failed webhooks with exponential backoff:
-- Attempt 1: Immediate
-- Attempt 2: 1 minute later
-- Attempt 3: 5 minutes later
-- Attempt 4: 15 minutes later
-- Attempt 5: 1 hour later
+```php
+<?php
+$rawBody = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_SENTINEL_SIGNATURE'] ?? '';
+$secret = getenv('SENTINELGATE_WEBHOOK_SECRET');
 
-**Best Practice:** Always return `200 OK` immediately, process async.
+// Verify signature
+$expected = 'sha256=' . hash_hmac('sha256', $rawBody, $secret);
+if (!hash_equals($expected, $signature)) {
+    http_response_code(401);
+    echo 'Invalid signature';
+    exit;
+}
+
+// Process
+$event = json_decode($rawBody, true);
+
+if ($event['status'] === 'captured') {
+    // Update order to paid
+    markOrderAsPaid($event['wc_order_id'], $event['sentinel_transaction_id']);
+}
+
+http_response_code(200);
+echo 'OK';
+```
+
+### Webhook Best Practices
+
+1. **Respond with 200 immediately** — process asynchronously. SentinelGate expects a response within 15 seconds.
+2. **Verify signatures always** — never process unverified webhooks.
+3. **Handle duplicates** — use `sentinel_transaction_id` as an idempotency key. Process each transaction only once.
+4. **Use HTTPS** — plain HTTP callback URLs are rejected.
+5. **Retry behavior** — failed webhooks are retried up to 3 times with exponential backoff (1 min, 5 min, 15 min).
 
 ---
 
@@ -323,37 +530,52 @@ SentinelGate will retry failed webhooks with exponential backoff:
 | Status | Meaning | Action |
 |--------|---------|--------|
 | 200 | Success | Process response |
-| 400 | Bad Request | Check request parameters |
-| 401 | Unauthorized | Verify API credentials |
-| 402 | Payment Required | Insufficient merchant balance |
-| 404 | Not Found | Check payment ID exists |
-| 429 | Rate Limited | Implement exponential backoff |
-| 500 | Server Error | Retry with backoff |
-| 502 | Provider Error | Provider is down, try different provider |
+| 400 | Bad Request | Check required fields in request body |
+| 401 | Unauthorized | Verify API Key and Secret headers |
+| 404 | Not Found | Invalid transaction ID or session |
+| 429 | Rate Limited | Back off and retry after delay |
+| 500 | Server Error | Retry with exponential backoff |
 
 ### Error Response Format
+
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "INVALID_PHONE",
-    "message": "Phone number must be in format 254XXXXXXXXX",
-    "field": "metadata.phone_number"
-  }
+  "error": "INVALID_REQUEST",
+  "message": "amount is required"
 }
 ```
 
+### Common Error Codes
+
+| Code | Cause | Fix |
+|------|-------|-----|
+| `MISSING_API_KEY` | No `X-API-Key` header | Add the header |
+| `INVALID_API_KEY` | Key doesn't match any merchant | Check credentials |
+| `INVALID_REQUEST` | Missing required field | Check required fields |
+| `SESSION_EXPIRED` | Payment session timed out | Create a new session |
+| `PROVIDER_ERROR` | Payment provider returned error | Check `message` for details |
+| `RATE_LIMIT_EXCEEDED` | Too many requests | Implement backoff |
+
 ### Retry Strategy
+
 ```javascript
 async function createPaymentWithRetry(payload, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await createPayment(payload);
+      return await createPaymentSession(payload);
     } catch (error) {
+      const status = error.response?.status;
+
+      // Don't retry client errors (except rate limiting)
+      if (status >= 400 && status < 500 && status !== 429) {
+        throw error;
+      }
+
       if (attempt === maxRetries) throw error;
-      
-      // Exponential backoff: 2^attempt seconds
+
+      // Exponential backoff: 2s, 4s, 8s
       const delay = Math.pow(2, attempt) * 1000;
+      console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -364,80 +586,55 @@ async function createPaymentWithRetry(payload, maxRetries = 3) {
 
 ## Testing Strategy
 
-### Test Environment
+### Test Workflow
 
-Use the same base URL with test credentials.
+1. Create a hosted checkout session using your real credentials
+2. Redirect to the payment page
+3. Use a real card or mobile money with a small amount ($1 / GHS 5)
+4. Verify webhook is received
+5. Verify order status updated
 
-### Test Data
+### Testing Webhooks Locally
 
-**Test Phone Numbers (M-Pesa):**
-```javascript
-const TEST_PHONES = {
-  success: '254712345678',    // Always succeeds
-  failure: '254700000000',    // Always fails
-  timeout: '254711111111',    // Simulates timeout
-  pending: '254722222222'     // Stays pending for 5 mins
-};
+Use [ngrok](https://ngrok.com) to expose your local server:
+
+```bash
+# Terminal 1: Start your server
+npm run dev
+# Server running on http://localhost:3000
+
+# Terminal 2: Expose with ngrok
+ngrok http 3000
+
+# Use the ngrok URL as your callback_url:
+# https://abc123.ngrok-free.app/webhook/sentinelgate
 ```
 
-**Test Cards (BUNI):**
-```javascript
-const TEST_CARDS = {
-  success: {
-    number: '4111111111111111',
-    expiry: '12/25',
-    cvv: '123'
-  },
-  decline: {
-    number: '4000000000000002',
-    expiry: '12/25',
-    cvv: '123'
-  },
-  insufficient: {
-    number: '4000000000009995',
-    expiry: '12/25',
-    cvv: '123'
-  }
-};
+### Webhook Test Script
+
+Send a mock webhook to test your handler:
+
+```bash
+# Generate a valid signature
+SECRET="sg_whsec_yourstore_ghi789"
+BODY='{"sentinel_transaction_id":"sg_txn_test_123","wc_order_id":"TEST-001","status":"captured","amount":1.00,"currency":"USD","provider":"hubtel","gateway_response":"Approved"}'
+SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')"
+
+# Send to your endpoint
+curl -X POST http://localhost:3000/webhook/sentinelgate \
+  -H "Content-Type: application/json" \
+  -H "X-Sentinel-Signature: $SIGNATURE" \
+  -d "$BODY"
 ```
 
-### Unit Test Example
-```javascript
-const { expect } = require('chai');
-const SentinelGateClient = require('./sentinelgate-client');
+### Rate Limits (Know Before You Test)
 
-describe('SentinelGate Payment Integration', () => {
-  let client;
-  
-  beforeEach(() => {
-    client = new SentinelGateClient(
-      process.env.TEST_API_KEY,
-      process.env.TEST_API_SECRET
-    );
-  });
-  
-  it('should create M-Pesa payment successfully', async () => {
-    const result = await client.createMpesaPayment(
-      10000,
-      '254712345678',
-      'Test Payment'
-    );
-    
-    expect(result.success).to.be.true;
-    expect(result.payment_id).to.match(/^pay_/);
-    expect(result.status).to.equal('PENDING');
-  });
-  
-  it('should handle invalid phone number', async () => {
-    try {
-      await client.createMpesaPayment(10000, 'invalid', 'Test');
-      expect.fail('Should have thrown error');
-    } catch (error) {
-      expect(error.response.data.error.code).to.equal('INVALID_PHONE');
-    }
-  });
-});
-```
+| Endpoint | Limit |
+|----------|-------|
+| `POST /v1/hosted/create` | 60/min |
+| `POST /v1/charge` | 30/min |
+| `GET /v1/transaction/:id` | 120/min |
+| `POST /v1/refund` | 10/min |
 
 ---
 
@@ -445,154 +642,212 @@ describe('SentinelGate Payment Integration', () => {
 
 ### Pre-Launch Checklist
 
-- [ ] Replace test credentials with production credentials
-- [ ] Update webhook URL to production domain
-- [ ] Verify SSL/TLS certificate is valid
-- [ ] Test webhook endpoint receives notifications
-- [ ] Implement proper error logging
-- [ ] Set up monitoring and alerts
-- [ ] Create runbook for common issues
-- [ ] Test with small real transaction
-- [ ] Verify settlement account is configured
+- [ ] Using production credentials (`sg_key_`, `sg_secret_`, `sg_whsec_`)
+- [ ] Callback URL uses HTTPS with valid SSL certificate
+- [ ] Webhook endpoint responds within 15 seconds
+- [ ] Webhook signature verification is implemented
+- [ ] Idempotency handling for duplicate webhooks
+- [ ] Error logging with transaction IDs
+- [ ] Return URL and cancel URL point to production pages
+- [ ] Test transaction completed successfully
+- [ ] Small real payment ($1) verified end-to-end
 
-### Environment Configuration
+### Production Environment Variables
+
 ```bash
-# Production .env
+# .env (production)
 NODE_ENV=production
-SENTINELGATE_API_KEY=sk_live_production_key
-SENTINELGATE_API_SECRET=secret_production_secret
-SENTINELGATE_WEBHOOK_SECRET=whsec_production_secret
-WEBHOOK_URL=https://yourdomain.com/webhook/sentinelgate
+SENTINELGATE_API_KEY=sg_key_yourstore_abc123
+SENTINELGATE_API_SECRET=sg_secret_yourstore_def456
+SENTINELGATE_WEBHOOK_SECRET=sg_whsec_yourstore_ghi789
+SENTINELGATE_BASE_URL=https://sentinelgate.biz
+YOUR_DOMAIN=https://yourproductionsite.com
 ```
 
-### Monitoring
-```javascript
-// Log all payment requests
-logger.info('Payment created', {
-  payment_id: result.payment_id,
-  amount: amount_cents,
-  provider: provider,
-  customer: customer_id
-});
+### Health Check
 
-// Track payment success rate
-metrics.increment('payments.created');
-metrics.increment(`payments.${provider}.created`);
+Verify the SentinelGate service is reachable:
 
-// Alert on failures
-if (result.status === 'FAILED') {
-  alerting.notify('Payment failed', {
-    payment_id: result.payment_id,
-    error: result.error
-  });
-}
+```bash
+curl -s https://sentinelgate.biz/health
+# Expected: {"status":"ok","providers":7}
 ```
 
 ---
 
 ## Best Practices
 
-### 1. Idempotency
+### 1. Always Use Hosted Checkout
 
-Use unique reference IDs to prevent duplicate payments:
+Unless you have PCI DSS Level 1 certification, use `/v1/hosted/create` instead of `/v1/charge`. Hosted checkout handles card form rendering, 3D Secure, and OTP verification automatically.
+
+### 2. Idempotency
+
+Use `sentinel_transaction_id` to prevent processing the same payment twice:
+
 ```javascript
-const orderRef = `ORDER-${Date.now()}-${Math.random()}`;
-
-await createPayment({
-  // ...
-  metadata: {
-    order_reference: orderRef  // Unique per order
+async function processWebhook(event) {
+  // Check if already processed
+  const existing = await db.payments.findUnique({
+    where: { sentinelTxnId: event.sentinel_transaction_id }
+  });
+  if (existing) {
+    console.log('Duplicate webhook, skipping:', event.sentinel_transaction_id);
+    return;
   }
-});
+
+  // Process payment...
+}
 ```
 
-### 2. Timeout Handling
+### 3. Timeout Handling
 
-Set appropriate timeouts:
+Set a 30-second timeout on API calls. Payment sessions don't expire immediately if the API call times out — query the transaction status before creating a new session:
+
 ```javascript
-const response = await axios.post(url, data, {
-  timeout: 30000, // 30 seconds
-  headers: headers
-});
-```
-
-### 3. Database Transactions
-
-Wrap critical operations in transactions:
-```javascript
-await db.transaction(async (tx) => {
-  await tx.orders.update({...});
-  await tx.inventory.update({...});
-  await tx.payments.create({...});
-});
+try {
+  const session = await createPaymentSession(order);
+} catch (error) {
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+    // Don't create another session — check if the first one was created
+    const txn = await queryTransaction(order.sentinelTxnId);
+    if (txn && txn.status === 'pending') {
+      // Session exists, redirect customer
+      return res.redirect(txn.redirect_url);
+    }
+  }
+  throw error;
+}
 ```
 
 ### 4. Logging
 
-Log all payment operations:
+Log all payment operations with transaction IDs for debugging:
+
 ```javascript
-logger.info('Payment initiated', { payment_id, amount, customer });
-logger.info('Webhook received', { event, payment_id });
-logger.error('Payment failed', { payment_id, error });
+console.log('[Payment] Session created', {
+  orderId: order.id,
+  txnId: payment.sentinel_transaction_id,
+  amount: order.total,
+  currency: order.currency
+});
+
+console.log('[Webhook] Received', {
+  txnId: event.sentinel_transaction_id,
+  status: event.status,
+  provider: event.provider
+});
 ```
 
-### 5. Customer Communication
+### 5. Database Transactions
 
-Always inform customers about payment status:
+Wrap order updates in database transactions to prevent inconsistent state:
+
 ```javascript
-await sendSMS(customer.phone, `Your payment of KES ${amount} was successful. Ref: ${payment_id}`);
+await prisma.$transaction(async (tx) => {
+  await tx.order.update({
+    where: { id: orderId },
+    data: { paymentStatus: 'paid', paidAt: new Date() }
+  });
+  await tx.inventory.update({
+    where: { productId: order.productId },
+    data: { stock: { decrement: order.quantity } }
+  });
+});
 ```
 
 ---
 
 ## Advanced Topics
 
-### Multi-Provider Fallback
-```javascript
-const PROVIDERS = ['MPESA_SAFARICOM', 'BUNI', 'KAREENHUB'];
+### Querying Transaction Status
 
-async function createPaymentWithFallback(payload) {
-  for (const provider of PROVIDERS) {
-    try {
-      const result = await createPayment({
-        ...payload,
-        provider: provider
-      });
-      
-      if (result.success) return result;
-    } catch (error) {
-      console.error(`${provider} failed:`, error);
-      continue; // Try next provider
+If you need to verify a payment outside of webhooks:
+
+```javascript
+async function checkPaymentStatus(txnId) {
+  const response = await axios.get(
+    `${SENTINEL_BASE}/v1/transaction/${txnId}`,
+    {
+      headers: {
+        'X-API-Key': API_KEY,
+        'X-API-Secret': API_SECRET
+      },
+      timeout: 15000
     }
-  }
-  
-  throw new Error('All providers failed');
+  );
+  return response.data;
+}
+
+// Usage
+const status = await checkPaymentStatus('sg_txn_1771888643979_cfe07b9d7fe6');
+// { sentinel_transaction_id, status, amount, currency, provider, created_at }
+```
+
+### Processing Refunds
+
+```javascript
+async function refundPayment(txnId, amount, reason) {
+  const response = await axios.post(
+    `${SENTINEL_BASE}/v1/refund`,
+    {
+      sentinel_transaction_id: txnId,
+      amount: amount,    // Partial refund: less than original. Full refund: omit or use full amount.
+      reason: reason
+    },
+    {
+      headers: {
+        'X-API-Key': API_KEY,
+        'X-API-Secret': API_SECRET,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+  return response.data;
+  // { sentinel_transaction_id, refund_id, amount, status: "refunded" }
 }
 ```
 
-### Rate Limiting
-```javascript
-const rateLimit = require('express-rate-limit');
+### Payment Links (No Frontend Required)
 
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute
-  message: 'Too many requests'
-});
+SentinelGate supports shareable payment links with QR codes — useful for invoices, POS, or email billing:
 
-app.use('/api/', limiter);
+```
+Checkout page:  https://sentinelgate.biz/pay/<token>
+QR code image:  https://sentinelgate.biz/pay/<token>/qr.png
 ```
 
+Link types: `STANDARD` (general payments), `INVOICE` (B2B), `GAMING` (variable amount).
+
+Contact SentinelGate to set up payment links for your merchant account.
+
+### Provider-Specific Behavior
+
+| Provider | Methods | Currency | Notes |
+|----------|---------|----------|-------|
+| **Hubtel** | Card + Mobile Money | GHS (USD converted) | Redirects to pay.hubtel.com |
+| **BUNI/KCB** | M-Pesa STK Push | KES | Sends push notification to phone |
+| **Pesapal** | Card + Mobile | KES, UGX, USD | Redirects to pesapal checkout |
+| **Paystack** | Card + Bank | NGN, GHS, USD | Redirects to paystack checkout |
+| **Emergent** | Card | USD, multi-currency | Pending server fix |
+| **Korapay** | Card + Mobile | NGN, GHS, USD | Pending credentials |
+| **Brooks** | Routed (multiple processors) | USD | Daily limits + rollover |
+
+SentinelGate routes payments to the appropriate provider based on your merchant configuration. You don't need to specify a provider — just send amount, currency, and let the routing engine handle it.
+
 ---
 
-## Support & Resources
+## Support
 
-- **API Reference:** See `API_DOCUMENTATION.md`
-- **Code Examples:** See `code-examples/` directory
-- **Postman Collection:** `SentinelGate_API.postman_collection.json`
-- **Technical Support:** Support@SentinelGAte.Biz
-- **Status Page:** http://status.sentinelgate.biz
+| Resource | Location |
+|----------|----------|
+| **API Reference** | [API_REFERENCE.md](./API_REFERENCE.md) |
+| **WooCommerce Plugin** | [WOOCOMMERCE_INTEGRATION.md](./WOOCOMMERCE_INTEGRATION.md) |
+| **Shopify Integration** | [SHOPIFY_INTEGRATION.md](./SHOPIFY_INTEGRATION.md) |
+| **Troubleshooting** | [COMMON_ISSUES.md](./COMMON_ISSUES.md) |
+| **Email Support** | support@sentinelgate.biz |
+| **Health Check** | https://sentinelgate.biz/health |
 
 ---
 
-**© 2026 SentinelGate. All rights reserved.**
+*© 2026 SentinelGate. All rights reserved.*
