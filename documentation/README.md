@@ -1,189 +1,143 @@
-# SentinelGate Documentation
+# SentinelGate PSP
 
-Complete documentation for the SentinelGate Payment Platform.
+**Secure Payment Gateway Platform**
+
+SentinelGate is a payment gateway that connects online stores to multiple payment providers through a single, unified API. It supports card payments, mobile money, and bank transfers across multiple currencies.
 
 ---
 
-## 📚 Documentation Structure
+## Who Is This For?
+
+| Audience | Start Here |
+|----------|------------|
+| **Merchants** setting up payments for their store | [Merchant Setup Guide](./docs/MERCHANT_GUIDE.md) |
+| **Developers** integrating SentinelGate into WooCommerce | [WooCommerce Integration](./docs/WOOCOMMERCE_INTEGRATION.md) |
+| **Developers** integrating SentinelGate into Shopify | [Shopify Integration](./docs/SHOPIFY_INTEGRATION.md) |
+| **Developers** building custom integrations | [API Reference](./docs/API_REFERENCE.md) |
+| **Customers** with questions about paying | [Customer FAQ](./docs/CUSTOMER_FAQ.md) |
+
+---
+
+## How It Works
+
+SentinelGate sits between your online store and payment providers. Your store talks to SentinelGate, and SentinelGate handles the complexity of routing payments to the right provider.
+
 ```
-documentation/
-├── README.md (this file)
-├── guides/
-│   ├── MERCHANT_GETTING_STARTED.md      # For business owners
-│   └── DEVELOPER_INTEGRATION_GUIDE.md   # For developers
-├── tutorials/
-│   └── TUTORIAL_MPESA_INTEGRATION.md    # Step-by-step M-Pesa integration
-├── api-reference/
-│   └── COMPLETE_API_REFERENCE.md        # Every endpoint documented
-├── troubleshooting/
-│   └── COMMON_ISSUES.md                 # Solutions to common problems
-└── security/
-    └── SECURITY_BEST_PRACTICES.md       # Security guidelines
+┌─────────────────┐       ┌──────────────────┐       ┌─────────────────┐
+│   Your Store    │       │   SentinelGate   │       │    Providers    │
+│                 │       │                  │       │                 │
+│  WooCommerce    │──────▶│  Hosted Checkout  │──────▶│  Hubtel         │
+│  Shopify        │       │  Payment Links   │       │  Pesapal        │
+│  Custom Site    │       │  Webhooks        │       │  Paystack       │
+│                 │◀──────│  Order Updates   │◀──────│  Emergent       │
+└─────────────────┘       └──────────────────┘       │  BUNI/M-Pesa   │
+                                                     └─────────────────┘
 ```
 
----
+**For the merchant:** You install a plugin or add a few lines of code. SentinelGate handles everything else.
 
-## 🎯 Quick Navigation
+**For the customer:** They see a clean, secure payment page. Enter card details or use mobile money. Get a confirmation.
 
-### For Business Owners
-Start here: [Merchant Getting Started Guide](guides/MERCHANT_GETTING_STARTED.md)
-
-### For Developers
-Start here: [Developer Integration Guide](guides/DEVELOPER_INTEGRATION_GUIDE.md)
-
-### For Security Teams
-Start here: [Security Best Practices](security/SECURITY_BEST_PRACTICES.md)
-
-### Having Issues?
-Check: [Troubleshooting Guide](troubleshooting/COMMON_ISSUES.md)
+**For the developer:** One API, multiple providers. Automatic failover, webhook callbacks, idempotent processing.
 
 ---
 
-## 📖 What's in Each Guide
+## Supported Platforms
 
-### 1. Merchant Getting Started (15 min read)
-**Audience:** Non-technical business owners  
-**Content:**
-- What is SentinelGate
-- How to get credentials
-- Integration options (plugins vs custom)
-- Testing payments
-- Going live
-- Understanding payment flows
-
-### 2. Developer Integration Guide (1-2 hour read)
-**Audience:** Software developers  
-**Content:**
-- Quick start with first API call
-- Authentication setup
-- Payment integration patterns
-- Webhook implementation
-- Error handling strategies
-- Testing methodology
-- Production deployment checklist
-- Best practices
-
-### 3. M-Pesa Integration Tutorial (30 min)
-**Audience:** Developers  
-**Content:**
-- Complete working example
-- Step-by-step implementation
-- Frontend + Backend code
-- Webhook handling
-- Status polling
-- Common issues
-
-### 4. Complete API Reference
-**Audience:** Developers, DevOps  
-**Content:**
-- Every endpoint documented
-- Request/response schemas
-- Provider-specific requirements
-- Error codes
-- Rate limits
-- Webhook specifications
-
-### 5. Troubleshooting Guide
-**Audience:** Everyone  
-**Content:**
-- Authentication issues
-- Payment creation problems
-- Webhook debugging
-- Connection issues
-- Testing problems
-- Production issues
-- Debug checklist
-
-### 6. Security Best Practices
-**Audience:** Developers, Security teams  
-**Content:**
-- Credential protection
-- Webhook security
-- Input validation
-- HTTPS/TLS setup
-- Rate limiting
-- Data protection
-- Logging guidelines
-- Incident response
+| Platform | Integration Type | Setup Time |
+|----------|-----------------|------------|
+| **WooCommerce** | Plugin (zip upload) | ~10 minutes |
+| **Shopify** | Webhook middleware + redirect script | ~30 minutes |
+| **Custom Website** | REST API | Varies |
 
 ---
 
-## 🚀 Quick Links
+## Supported Payment Methods
 
-- **API Base URL:** `http://185.229.224.244:3000`
-- **Support:** support@sentinelgate.com
-- **Status Page:** http://status.sentinelgate.com
-- **Postman Collection:** `../SentinelGate_API.postman_collection.json`
-- **Code Examples:** `../code-examples/`
-
----
-
-## 📦 Additional Resources
-
-### Code Examples
-Located in: `code-examples/`
-
-- **Python:** `python_example.py`
-- **PHP:** `php_example.php`
-- **Node.js:** `nodejs_example.js`
-
-### Postman Collection
-Located in: Root directory  
-File: `SentinelGate_API.postman_collection.json`
-
-Import this into Postman for easy API testing.
+| Method | Currencies | Providers |
+|--------|-----------|-----------|
+| **Visa / Mastercard** | USD, GHS | Hubtel, Paystack, Emergent |
+| **Mobile Money (Ghana)** | GHS | Hubtel |
+| **M-Pesa (Kenya)** | KES | BUNI/KCB |
+| **Mobile Money (East Africa)** | KES, UGX, TZS | Pesapal |
+| **Bank Transfer** | USD, NGN | Paystack, Korapay |
 
 ---
 
-## 🎓 Learning Path
+## Quick Start
 
-**New to SentinelGate?**
+### WooCommerce (Fastest)
 
-1. Read [Merchant Getting Started](guides/MERCHANT_GETTING_STARTED.md) (15 min)
-2. Get your API credentials
-3. Follow [M-Pesa Tutorial](tutorials/TUTORIAL_MPESA_INTEGRATION.md) (30 min)
-4. Review [Security Best Practices](security/SECURITY_BEST_PRACTICES.md) (20 min)
-5. Read [Developer Integration Guide](guides/DEVELOPER_INTEGRATION_GUIDE.md) (1 hour)
-6. Reference [API Documentation](api-reference/COMPLETE_API_REFERENCE.md) as needed
+1. Download `sentinelgate-psp.zip`
+2. WordPress Admin → Plugins → Upload → Activate
+3. WooCommerce → Settings → Payments → SentinelGate PSP
+4. Enter your API Key, Secret, and Webhook Secret
+5. Save → Test a purchase
 
-**Total time investment:** ~2 hours to full integration
+Full guide: [WooCommerce Integration](./docs/WOOCOMMERCE_INTEGRATION.md)
 
----
+### Shopify
 
-## 🔍 Search Tips
+1. Create a Custom App in Shopify with order permissions
+2. Register your store with SentinelGate
+3. Add webhooks pointing to SentinelGate
+4. Add redirect script to checkout
+5. Test an order
 
-Use your code editor's search function (Ctrl+F / Cmd+F) to find specific topics:
+Full guide: [Shopify Integration](./docs/SHOPIFY_INTEGRATION.md)
 
-- Search "M-Pesa" for M-Pesa specific info
-- Search "webhook" for webhook implementation
-- Search "error" for error handling
-- Search "security" for security topics
-- Search "❌" for things NOT to do
-- Search "✅" for recommended approaches
+### Custom Integration
 
----
+```bash
+curl -X POST https://sentinelgate.biz/v1/hosted/create \
+  -H "X-API-Key: your_api_key" \
+  -H "X-API-Secret: your_api_secret" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "50.00",
+    "currency": "USD",
+    "order_id": "ORD-001",
+    "customer_email": "buyer@example.com",
+    "callback_url": "https://yoursite.com/payment-callback",
+    "return_url": "https://yoursite.com/thank-you"
+  }'
+```
 
-## 📞 Getting Help
-
-1. **Check documentation first** - Use search
-2. **Review [Troubleshooting Guide](troubleshooting/COMMON_ISSUES.md)**
-3. **Email support:** support@sentinelgate.com
-4. **Include in support request:**
-   - Payment ID (if applicable)
-   - Error message
-   - Request/response logs (remove credentials!)
-   - Code snippet
-
----
-
-## 🔄 Documentation Updates
-
-**Last Updated:** February 7, 2026  
-**Version:** 1.0.0  
-**API Version:** v1
-
-Check back regularly for updates!
+Redirect the customer to the `redirect_url` in the response. Full guide: [API Reference](./docs/API_REFERENCE.md)
 
 ---
 
-**© 2026 SentinelGate. All rights reserved.**
+## Security
+
+SentinelGate is built with security as a core requirement:
+
+- **HTTPS/TLS 1.3** — All communication is encrypted in transit
+- **AES-256-GCM** — Sensitive credentials encrypted at rest
+- **HMAC-SHA256** — All webhooks are signature-verified
+- **No card storage** — Card details are never stored on SentinelGate servers
+- **PCI Compliant** — Hosted checkout means merchants don't need PCI certification
+- **Idempotent processing** — Duplicate webhooks are safely ignored
+- **Rate limiting** — All endpoints protected against abuse
+
+---
+
+## Support
+
+| Channel | Details |
+|---------|---------|
+| **Email** | support@sentinelgate.biz |
+| **Documentation** | https://sentinelgate.biz/docs |
+| **Status Page** | https://sentinelgate.biz/status |
+
+---
+
+## Documentation Index
+
+```
+docs/
+├── MERCHANT_GUIDE.md           # For store owners: setup, dashboard, managing payments
+├── WOOCOMMERCE_INTEGRATION.md  # WooCommerce plugin installation and configuration
+├── SHOPIFY_INTEGRATION.md      # Shopify webhook and redirect setup
+├── API_REFERENCE.md            # Full API documentation for developers
+└── CUSTOMER_FAQ.md             # FAQ for end customers making payments
+```
