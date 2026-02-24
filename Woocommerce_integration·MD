@@ -127,12 +127,12 @@ This endpoint:
 
 The plugin automatically routes to the correct provider based on your store's currency:
 
-| Store Currency | Payment Methods | Provider |
-|---------------|-----------------|----------|
-| USD | Visa, Mastercard | PesaPal |
-| KES | Visa, Mastercard, M-Pesa | PesaPal, BUNI |
-| GHS | Visa, Mastercard, MoMo | Hubtel |
-| NGN | Visa, Mastercard, Verve | Paystack, Korapay |
+| Store Currency | Payment Methods |
+|---------------|-----------------|
+| USD | Visa, Mastercard |
+| KES | Visa, Mastercard, M-Pesa | 
+| GHS | Visa, Mastercard, MoMo | 
+| NGN | Visa, Mastercard, Verve | 
 
 ---
 
