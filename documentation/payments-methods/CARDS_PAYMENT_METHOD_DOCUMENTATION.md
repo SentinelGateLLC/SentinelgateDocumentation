@@ -282,7 +282,7 @@ Card payments include built-in protections from providers:
 ### Card payment returns "PROVIDER_ERROR"
 
 The underlying provider had an issue. Check the `message` field in the error response. Common causes:
-- Provider API is down (check https://sentinelgate.biz/health)
+- Provider API is down (check (https://sentinelgate.biz/api/status))
 - Merchant account not fully activated on provider
 - Currency mismatch
 
