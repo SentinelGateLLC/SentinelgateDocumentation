@@ -163,7 +163,7 @@ You will soon be able to:
 - Issue refunds
 - Manage settings
 
-Access at: http://185.229.224.244:3002
+Access at: (https://sentinelgate.biz:3200/login)
 
 ---
 
