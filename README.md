@@ -24,13 +24,13 @@ SentinelGate sits between your online store and payment providers. Your store ta
 
 ```
 ┌─────────────────┐       ┌──────────────────┐       ┌─────────────────┐
-│   Your Store    │       │   SentinelGate   │       │    Providers    │
+│   Your Store    │       │   SentinelGate   │       │                │
 │                 │       │                  │       │                 │
-│  WooCommerce    │──────▶│  Hosted Checkout  │──────▶│  Hubtel         │
-│  Shopify        │       │  Payment Links   │       │  Pesapal        │
-│  Custom Site    │       │  Webhooks        │       │  Paystack       │
-│                 │◀──────│  Order Updates   │◀──────│  Emergent       │
-└─────────────────┘       └──────────────────┘       │  BUNI/M-Pesa   │
+│  WooCommerce    │──────▶│  Hosted Checkout  │──────▶│  PROVIDER     │
+│  Shopify        │       │  Payment Links   │       │                │
+│  Custom Site    │       │  Webhooks        │       │                 │
+│                 │◀──────│  Order Updates   │◀──────│                │
+└─────────────────┘       └──────────────────┘       │                 │
                                                      └─────────────────┘
 ```
 
