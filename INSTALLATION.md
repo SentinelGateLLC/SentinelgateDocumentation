@@ -68,7 +68,7 @@ See: DEPLOYMENT_CHECKLIST.md
 1. Open Postman
 2. Import: SentinelGate_API.postman_collection.json
 3. Set variables:
-   - base_url: http://185.229.224.244:3000
+   - base_url: https://sentinelgate.biz
    - api_key: [your key]
    - api_secret: [your secret]
 4. Test endpoints
