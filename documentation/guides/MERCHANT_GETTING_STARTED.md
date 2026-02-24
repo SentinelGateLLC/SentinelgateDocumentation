@@ -1,182 +1,268 @@
 # Getting Started with SentinelGate Payments
 
-**For:** Business Owners & Merchants (Non-Technical)  
+**For:** Business Owners & Merchants (Non-Technical)
 **Time to Complete:** 15 minutes
+**Last Updated:** February 24, 2026
 
 ---
 
 ## What is SentinelGate?
 
-SentinelGate is a payment platform that lets you accept payments from customers using:
-- **M-Pesa** - Mobile money payments
-- **Credit/Debit Cards** - Visa, Mastercard
-- **Bank Transfers** - Direct bank payments
+SentinelGate is a payment platform that lets your online store accept payments from customers worldwide. We handle the complicated parts — you just sell your products.
+
+**Payment methods your customers can use:**
+
+- **Cards** — Visa and Mastercard (credit and debit)
+- **Mobile Money (Ghana)** — MTN, Vodafone Cash, AirtelTigo
+- **M-Pesa (Kenya)** — Direct from customer's phone via STK Push
+- **Bank Transfers** — Direct bank payments
+
+**Supported currencies:** USD, GHS (Ghana Cedis), KES (Kenya Shillings), UGX, NGN
 
 ---
 
 ## Step 1: Get Your Credentials
 
-You should have received an email with:
-- **Merchant ID** - Your unique identifier (e.g., `brooks-ud-zone`)
-- **API Key** - Starts with `sk_live_...`
-- **API Secret** - Starts with `secret_...`
-- **Webhook Secret** - Starts with `whsec_...`
+Your SentinelGate integration team will provide three credentials:
 
-⚠️ **IMPORTANT:** Keep these credentials secure. Never share them publicly or commit them to code repositories.
+| Credential | What It Looks Like | What It Does |
+|-----------|-------------------|-------------|
+| **API Key** | `sg_key_yourstore_abc123...` | Identifies your store |
+| **API Secret** | `sg_secret_yourstore_def456...` | Authenticates payments |
+| **Webhook Secret** | `sg_whsec_yourstore_ghi789...` | Verifies payment notifications |
 
----
-
-## Step 2: Choose Your Integration Method
-
-### Option A: Use Our Plugins (Easiest)
-
-**For Shopify Users:**
-1. Download the SentinelGate Shopify plugin
-2. Install it in your Shopify store
-3. Enter your credentials
-4. Done! Payments will work automatically
-
-**For WooCommerce Users:**
-1. Download the SentinelGate WooCommerce plugin
-2. Install via WordPress admin
-3. Configure your credentials
-4. Activate payment methods
-
-### Option B: Hire a Developer
-
-Share this documentation package with your developer. They will integrate the API into your website or app.
-
-### Option C: Use Our Integration Service
-
-Contact us at support@sentinelgate.com for professional integration assistance.
+**Keep these safe:**
+- Do not share them in emails, chats, or social media
+- Do not post them publicly or in screenshots
+- If you think they've been compromised, contact support@sentinelgate.biz immediately for a reset
 
 ---
 
-## Step 3: Test Your Integration
+## Step 2: Choose How to Connect Your Store
 
-### Test Payments
+### Option A: WooCommerce Plugin (Easiest — 10 minutes)
 
-Use these test details to verify everything works:
+If your store runs on WordPress + WooCommerce:
 
-**Test M-Pesa Number:**
-```
-254712345678
-```
+1. Download `sentinelgate-psp.zip` from your integration team
+2. Go to WordPress Admin → **Plugins → Add New → Upload Plugin**
+3. Upload the zip file → **Install → Activate**
+4. Go to **WooCommerce → Settings → Payments → SentinelGate PSP**
+5. Enter your API Key, API Secret, and Webhook Secret
+6. Set Integration Mode to **Redirect Hosted Checkout**
+7. Click **Save Changes**
 
-**Test Card:**
-```
-Card Number: 4111 1111 1111 1111
-Expiry: 12/25
-CVV: 123
-```
+Full guide: [WooCommerce Integration](./WOOCOMMERCE_INTEGRATION.md)
 
-**Expected Result:** You should receive a payment confirmation within 1-2 minutes.
+### Option B: Shopify (30 minutes)
+
+If your store runs on Shopify:
+
+1. Create a Custom App in Shopify Admin (Settings → Apps → Develop Apps)
+2. Share your Shopify Admin API token with SentinelGate
+3. Set up webhooks in Shopify pointing to SentinelGate
+4. Add a payment redirect script to your checkout
+5. Add a manual payment method called "Pay with Card / Mobile Money"
+
+Full guide: [Shopify Integration](./SHOPIFY_INTEGRATION.md)
+
+### Option C: Custom Website (Developer Required)
+
+If you have a custom-built website, share the [API Reference](./API_REFERENCE.md) with your developer. They will integrate using our REST API.
+
+### Option D: Payment Links (No Website Needed)
+
+Don't have a website? SentinelGate can create **payment links** for you — shareable URLs that customers click to pay. Each link comes with a QR code you can print or share.
+
+Contact your integration team to set up payment links.
+
+---
+
+## Step 3: Test a Payment
+
+Before going live, do a test purchase:
+
+1. Add a product to your cart on your store
+2. Go to checkout
+3. Select the SentinelGate payment method
+4. Click "Place Order"
+5. You'll be redirected to the payment page
+6. Complete the payment using a real card or mobile money
+7. Verify the order shows as **"Processing"** in your store admin
+
+**Tip:** Start with a small amount (e.g., $1 or GHS 5) for your first test.
 
 ---
 
 ## Step 4: Go Live
 
-Once testing is complete:
-1. Ensure you're using **production credentials** (not test/sandbox)
-2. Update your webhook URL to your live website
-3. Process a small real transaction to verify
-4. You're ready to accept payments!
+Once your test payment is confirmed:
+
+- ✅ Your store is live and ready to accept real payments
+- ✅ Disable any other test payment gateways
+- ✅ Inform your team that the payment system is active
+
+That's it. Customers can now pay on your store.
 
 ---
 
-## Understanding Payment Flow
+## What Your Customers See
+
+When a customer places an order, they are redirected to a secure payment page:
+
 ```
-Customer → Your Website → SentinelGate → Payment Provider → Customer's Bank/Phone
-                                    ↓
-                            Confirmation Sent Back
+Your Store Checkout → Click "Place Order" → Secure Payment Page → Pay → Back to Your Store
 ```
 
-**Timeline:**
-- **M-Pesa:** 10-30 seconds
-- **Cards:** Instant to 2 minutes
-- **Bank Transfer:** 1-24 hours
+On the payment page, they can:
+- Enter card details (number, expiry, CVV)
+- Select mobile money and approve on their phone
+- Complete 3D Secure verification if their bank requires it
+
+After payment, they're automatically redirected to your order confirmation page.
+
+The entire process takes 30-60 seconds.
 
 ---
 
-## Webhooks Explained (Simple)
+## Understanding Your Payments
 
-**What is a webhook?**
-Think of it like a phone call. When a payment is complete, SentinelGate "calls" your website to let it know.
+### Payment Statuses
 
-**Why do I need it?**
-So your website can automatically:
-- Mark orders as paid
-- Send confirmation emails
-- Update inventory
+| Status | What It Means | What You Do |
+|--------|--------------|-------------|
+| **Processing** | Payment received successfully | Fulfill the order |
+| **Pending** | Customer hasn't completed payment yet | Wait or follow up |
+| **Failed** | Payment was declined | Customer can retry |
+| **Refunded** | Money returned to customer | Process the return |
 
-**Your developer will handle this technical part.**
+### Where to See Your Orders
+
+- **WooCommerce:** WordPress Admin → WooCommerce → Orders
+- **Shopify:** Shopify Admin → Orders
+
+Each order includes a SentinelGate transaction ID (e.g., `sg_txn_1771888643979_cfe07b9d7fe6`) in the order notes. Use this ID when contacting support.
 
 ---
 
-## Payment Methods Available
+## Payment Methods — What to Know
+
+### Cards (Visa / Mastercard)
+
+- Works globally
+- Customer enters card details on the payment page
+- 3D Secure (OTP) may be required by the customer's bank
+- Processing time: Instant
+
+### Mobile Money (Ghana)
+
+- MTN Mobile Money, Vodafone Cash, AirtelTigo Money
+- Customer selects their provider and approves on their phone
+- Processing time: 10-30 seconds
+- Customers pay in GHS (converted from USD if your store is in dollars)
 
 ### M-Pesa (Kenya)
-- **Min Amount:** 10 KES
-- **Max Amount:** 150,000 KES
-- **Speed:** 10-30 seconds
-- **Fee:** 1.5% + KES 5
 
-### Cards (BUNI)
-- **Supported:** Visa, Mastercard
-- **Min Amount:** 100 KES
-- **Max Amount:** 1,000,000 KES
-- **Speed:** Instant
-- **Fee:** 2.9% + KES 10
+- Customer receives an STK Push notification on their phone
+- They enter their M-Pesa PIN to approve
+- Processing time: 10-30 seconds
+- Currency: KES
 
-### Bank Transfer (KareenHub)
-- **Min Amount:** 100 KES
-- **Max Amount:** 5,000,000 KES
-- **Speed:** 1-24 hours
-- **Fee:** 1% (max KES 500)
+---
+
+## Refunds
+
+To refund a customer:
+
+**WooCommerce:** Open the order → Click "Refund" → Enter amount → Submit
+
+**Shopify:** Open the order → Click "Refund" → Enter amount → Submit
+
+Refund timelines:
+- **Cards:** 5-10 business days
+- **Mobile Money:** 1-3 business days
+- **M-Pesa:** 1-2 business days
+
+---
+
+## Currency and Conversion
+
+If your store prices in USD but your payment provider operates in a local currency:
+
+- The provider converts USD → local currency automatically
+- The customer sees the converted amount on the payment page
+- You receive settlement in the provider's currency
+- Exchange rates are set by the provider, not SentinelGate
+
+**Example:** A $50 USD order processed through Hubtel (Ghana) will show approximately GHS 750 on the payment page (at current rates).
+
+---
+
+## Fees and Settlements
+
+Fees depend on your agreement with SentinelGate. Typical structure:
+
+| Component | Description |
+|-----------|------------|
+| Transaction fee | Percentage of each successful payment |
+| Fixed fee | Small amount per transaction |
+| Conversion fee | Applied when currencies differ |
+
+**Settlement:** Funds are deposited to your account, typically next business day (T+1). Settlement timelines vary by provider.
+
+Contact your SentinelGate account manager for your specific fee schedule.
 
 ---
 
 ## Common Questions
 
-**Q: How long does it take to get paid out?**
-A: Typically T+1 (next business day) to your settlement account.
+**Q: How quickly do I get my money?**
+Typically next business day (T+1). Varies by provider.
 
-**Q: What happens if a payment fails?**
-A: The customer is notified immediately and can retry. No charges are made.
+**Q: What if a customer's payment fails?**
+They're notified immediately and can retry. No charge is made for failed attempts.
 
-**Q: Can I refund a customer?**
-A: Yes! Contact support@sentinelgate.com or use the refund API.
+**Q: Can I accept payments from multiple countries?**
+Yes. Card payments work globally. Mobile money is region-specific (Ghana, Kenya).
 
-**Q: Is there a transaction limit?**
-A: Yes, limits vary by payment method (see above).
+**Q: What if I need to change my payment provider?**
+Contact SentinelGate. Provider changes happen server-side — no changes needed on your store.
 
-**Q: Who do I contact for support?**
-A: Email support@sentinelgate.com or call +254-XXX-XXXXXX
+**Q: Can I see all my transactions in one place?**
+Yes. Through your WooCommerce or Shopify admin. A dedicated SentinelGate merchant dashboard is in development.
 
----
+**Q: What if a customer says they paid but I don't see the order?**
+Ask them for the SentinelGate transaction ID (starts with `sg_txn_`). Contact support@sentinelgate.biz with this ID.
 
-## Dashboard Access (Coming Soon)
-
-You will soon be able to:
-- View all transactions
-- Download reports
-- Issue refunds
-- Manage settings
-
-Access at: http://185.229.224.244:3002
+**Q: Is my store secure?**
+Yes. SentinelGate uses bank-grade encryption (AES-256), all communication is over HTTPS, and card details never touch your server. We are PCI compliant.
 
 ---
 
-## Next Steps
+## Checklist
 
-- [ ] Received credentials
-- [ ] Chose integration method
-- [ ] Completed test transaction
-- [ ] Went live
-- [ ] Processed first real payment
+Use this to track your setup:
 
-**Need Help?** Contact support@sentinelgate.com
+- [ ] Received API Key, API Secret, and Webhook Secret
+- [ ] Chose integration method (WooCommerce / Shopify / Custom / Payment Links)
+- [ ] Installed plugin or configured integration
+- [ ] Completed a test payment
+- [ ] Verified order appears in store admin
+- [ ] Disabled other test payment gateways
+- [ ] Ready to accept real payments
 
 ---
 
-**© 2026 SentinelGate. All rights reserved.**
+## Need Help?
+
+| I Need... | Contact |
+|-----------|---------|
+| Help setting up my store | Your SentinelGate integration team |
+| Help with a specific transaction | support@sentinelgate.biz (include transaction ID) |
+| My credentials reset | support@sentinelgate.biz |
+| To change payment providers | Your SentinelGate account manager |
+| Technical documentation | [API Reference](./API_REFERENCE.md) |
+
+---
+
+*© 2026 SentinelGate. All rights reserved.*
