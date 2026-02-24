@@ -1,135 +1,109 @@
-# Troubleshooting Guide
+# Troubleshooting Guide — Common Issues
 
-Common issues and their solutions when integrating with SentinelGate.
+**For:** Developers & Technical Teams
+**Last Updated:** February 24, 2026
 
 ---
 
 ## Authentication Issues
 
-### ❌ Error: "Invalid API Key"
+### ❌ Error: "Invalid API Key" or 401 Unauthorized
 
 **Symptoms:**
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "INVALID_API_KEY",
-    "message": "API key is missing or invalid"
-  }
+  "error": "MISSING_API_KEY",
+  "message": "API key is missing or invalid"
 }
 ```
 
 **Solutions:**
 
-1. **Verify credentials format:**
-   - API Key should start with `sk_live_`
-   - API Secret should start with `secret_`
+1. **Check credential format** — SentinelGate credentials use the `sg_` prefix:
+   ```
+   API Key:        sg_key_yourstore_abc123...
+   API Secret:     sg_secret_yourstore_def456...
+   Webhook Secret: sg_whsec_yourstore_ghi789...
+   ```
 
-2. **Check headers:**
-```javascript
+2. **Check headers** — must be `X-API-Key` and `X-API-Secret`, not `Authorization`:
+   ```javascript
    // ✅ Correct
    headers: {
-     'X-API-Key': 'sk_live_...',
-     'X-API-Secret': 'secret_...'
+     'X-API-Key': 'sg_key_yourstore_abc123',
+     'X-API-Secret': 'sg_secret_yourstore_def456',
+     'Content-Type': 'application/json'
    }
-   
-   // ❌ Wrong
-   headers: {
-     'Authorization': 'Bearer sk_live_...'  // Wrong!
-   }
-```
 
-3. **Environment variables:**
-```bash
-   # Check they're loaded
-   echo $SENTINELGATE_API_KEY
-```
+   // ❌ Wrong — not Bearer auth
+   headers: {
+     'Authorization': 'Bearer sg_key_...'
+   }
+
+   // ❌ Wrong — lowercase header names may fail
+   headers: {
+     'x-api-key': 'sg_key_...'
+   }
+   ```
+
+3. **Verify credentials are loaded:**
+   ```bash
+   # Check environment variables
+   echo "Key starts with: ${SENTINELGATE_API_KEY:0:20}..."
+   echo "Secret starts with: ${SENTINELGATE_API_SECRET:0:25}..."
+   ```
+
+4. **Check for whitespace** — copy-paste can add leading/trailing spaces:
+   ```javascript
+   const key = process.env.SENTINELGATE_API_KEY.trim();
+   ```
 
 ---
 
 ## Payment Creation Issues
 
-### ❌ Error: "Invalid phone number"
+### ❌ No `redirect_url` in response
 
-**Symptoms:**
-```json
-{
-  "error": {
-    "code": "INVALID_PHONE",
-    "message": "Phone number must be in format 254XXXXXXXXX"
-  }
-}
-```
+**Symptoms:** The `/v1/hosted/create` call returns successfully but the redirect URL is empty or the customer isn't redirected.
 
 **Solutions:**
-```javascript
-// ❌ Wrong formats
-'0712345678'        // Missing country code
-'+254712345678'     // Has + sign
-'254 712 345 678'   // Has spaces
-'254-712-345-678'   // Has dashes
 
-// ✅ Correct format
-'254712345678'      // Exactly this format
-```
+1. **Check required fields:**
+   ```json
+   {
+     "amount": "50.00",        // Required — string, decimal format
+     "currency": "USD",         // Required — ISO 4217
+     "order_id": "ORD-001",    // Required — your unique order ID
+     "callback_url": "https://yoursite.com/webhook",  // Required — HTTPS
+     "return_url": "https://yoursite.com/confirmed"    // Required — HTTPS
+   }
+   ```
 
-**Phone number validator:**
-```javascript
-function validateKenyanPhone(phone) {
-  // Remove any spaces, dashes, plus signs
-  phone = phone.replace(/[\s\-\+]/g, '');
-  
-  // Convert 0712... to 254712...
-  if (phone.startsWith('0')) {
-    phone = '254' + phone.substring(1);
-  }
-  
-  // Validate format
-  if (!/^254\d{9}$/.test(phone)) {
-    throw new Error('Invalid phone format. Must be 254XXXXXXXXX');
-  }
-  
-  return phone;
-}
-```
+2. **Amount must be a string in dollars**, not cents:
+   ```javascript
+   // ✅ Correct
+   { "amount": "191.00" }
 
----
+   // ❌ Wrong — integer
+   { "amount": 191 }
 
-### ❌ Error: "Amount below minimum"
+   // ❌ Wrong — cents
+   { "amount": "19100" }
+   ```
 
-**Symptoms:**
-```json
-{
-  "error": {
-    "code": "INVALID_AMOUNT",
-    "message": "Amount must be at least 10 KES"
-  }
-}
-```
+3. **Check provider is configured** — if no provider is available for the currency/method, session creation fails. Verify with:
+   ```bash
+   curl -s https://sentinelgate.biz/health
+   # Should show {"status":"ok","providers":7}
+   ```
 
-**Solutions:**
-```javascript
-// ❌ Wrong - amount in cents
-amount_cents: 5  // 0.05 KES - too small!
+### ❌ Customer redirected to wrong provider / sees wrong merchant name
 
-// ✅ Correct - minimum 10 KES = 1000 cents
-amount_cents: 1000  // 10 KES
+SentinelGate routes payments based on merchant configuration. If the customer sees an unexpected provider page or merchant name:
 
-// ✅ Better - convert from KES
-function toAmountCents(amountKES) {
-  const cents = Math.round(amountKES * 100);
-  
-  if (cents < 1000) {
-    throw new Error('Minimum amount is 10 KES');
-  }
-  
-  if (cents > 15000000) {  // 150,000 KES for M-Pesa
-    throw new Error('Maximum amount is 150,000 KES');
-  }
-  
-  return cents;
-}
-```
+1. The payment is being routed to the correct provider — the merchant name shown is from the **provider dashboard**, not SentinelGate
+2. To change the displayed name: update the business name in the provider's dashboard (e.g., Hubtel → Business Settings)
+3. If routing to the wrong provider entirely, contact SentinelGate to check your merchant routing config
 
 ---
 
@@ -137,285 +111,391 @@ function toAmountCents(amountKES) {
 
 ### ❌ Webhooks not being received
 
-**Diagnosis:**
+**Step-by-step diagnosis:**
 
-1. **Check webhook URL is accessible:**
-```bash
-   curl -X POST https://yourdomain.com/webhook \
+1. **Is your endpoint publicly accessible?**
+   ```bash
+   curl -X POST https://yoursite.com/webhook/sentinelgate \
      -H "Content-Type: application/json" \
-     -d '{"test": "data"}'
-```
+     -d '{"test": true}'
+   # Should NOT return 404 or connection refused
+   ```
 
-2. **Verify SSL certificate:**
-```bash
-   curl -v https://yourdomain.com/webhook 2>&1 | grep -i ssl
-```
+2. **Is HTTPS working?**
+   ```bash
+   curl -v https://yoursite.com 2>&1 | grep "SSL certificate"
+   # Must have valid SSL — self-signed certificates are rejected
+   ```
 
-3. **Check server logs:**
-```bash
-   tail -f /var/log/app/webhooks.log
-```
+3. **Is a firewall or WAF blocking POST requests?**
+   ```bash
+   # Check if Cloudflare, Sucuri, or Wordfence is blocking
+   # Whitelist SentinelGate server IP: 164.92.213.22
+   ```
 
-**Common causes:**
+4. **Is your webhook responding fast enough?**
+   SentinelGate expects a 2xx response within **15 seconds**. If your handler takes longer, the webhook is marked as failed and retried.
 
-✅ **Solution 1: Firewall blocking**
-```bash
-# Allow incoming connections on webhook port
-sudo ufw allow 443/tcp
-```
+   ```javascript
+   // ❌ Wrong — processes before responding (may timeout)
+   app.post('/webhook', async (req, res) => {
+     await processPayment(req.body);  // Takes 20 seconds
+     res.status(200).send('OK');       // Too late
+   });
 
-✅ **Solution 2: Wrong content-type parser**
+   // ✅ Correct — respond first, process async
+   app.post('/webhook', (req, res) => {
+     res.status(200).send('OK');       // Immediate response
+     processPayment(req.body).catch(console.error);  // Async
+   });
+   ```
+
+5. **WooCommerce specific:** The webhook URL is `https://yoursite.com/wc-api/sentinelgate_callback/`. If you get 404:
+   ```
+   Go to WordPress → Settings → Permalinks → click Save (re-flushes rewrite rules)
+   ```
+
+### ❌ Error: "Invalid webhook signature"
+
 ```javascript
-// ❌ Wrong - parses body before verification
+// ✅ CRITICAL: You must use the raw body for signature verification
+
+// ❌ Wrong — body is already parsed by express.json()
 app.use(express.json());
 app.post('/webhook', (req, res) => {
-  // req.body is already parsed - can't verify signature!
+  verifySignature(JSON.stringify(req.body), ...);  // WRONG — re-serialized body ≠ raw body
 });
 
-// ✅ Correct - use raw body for webhook
+// ✅ Correct — use express.raw() to get the original bytes
 app.post('/webhook',
-  express.raw({type: 'application/json'}),
+  express.raw({ type: 'application/json' }),
   (req, res) => {
-    // req.body is Buffer - can verify signature
-    const signature = req.headers['x-webhook-signature'];
-    // ...verify signature first
-    const event = JSON.parse(req.body);
+    const isValid = verifySignature(req.body, ...);  // req.body is Buffer
   }
 );
 ```
 
-✅ **Solution 3: Not returning 200 OK**
-```javascript
-// ❌ Wrong - no response sent
-app.post('/webhook', async (req, res) => {
-  await processEvent(req.body);
-  // Forgot to send response!
-});
+**Signature header:** `X-Sentinel-Signature` (not `X-Webhook-Signature`)
 
-// ✅ Correct - always respond quickly
-app.post('/webhook', (req, res) => {
-  // Send 200 immediately
-  res.status(200).send('OK');
-  
-  // Process async
-  processEvent(req.body).catch(console.error);
-});
+**Format:** `sha256=<hex_digest>`
+
+```javascript
+function verifySignature(rawBody, signature, secret) {
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(signature)
+  );
+}
+```
+
+### ❌ Duplicate webhook events
+
+SentinelGate may retry webhooks if your server returns a non-2xx response. This means you might receive the same event 2-3 times.
+
+**Solution:** Use `sentinel_transaction_id` as an idempotency key:
+
+```javascript
+async function processWebhook(event) {
+  const existing = await db.payments.findFirst({
+    where: { sentinelTxnId: event.sentinel_transaction_id }
+  });
+
+  if (existing && existing.status === 'paid') {
+    console.log('Already processed, skipping');
+    return;
+  }
+
+  // Process payment...
+}
 ```
 
 ---
 
-### ❌ Error: "Invalid webhook signature"
+## Provider-Specific Issues
 
-**Solutions:**
-```javascript
-// ✅ Correct signature verification
-const crypto = require('crypto');
+### ❌ Hubtel: "Sixty Forty" shown as merchant name
 
-function verifyWebhook(rawBody, signature, secret) {
-  // rawBody must be Buffer or string (NOT parsed JSON)
-  const hmac = crypto.createHmac('sha256', secret);
-  const digest = hmac.update(rawBody).digest('hex');
-  
-  // Use timing-safe comparison
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(digest)
-  );
-}
+Hubtel displays the merchant name from their dashboard, not from SentinelGate. To fix:
 
-// Usage with Express
-app.post('/webhook',
-  express.raw({type: 'application/json'}),  // Keep as Buffer
-  (req, res) => {
-    const signature = req.headers['x-webhook-signature'];
-    
-    if (!verifyWebhook(req.body, signature, process.env.WEBHOOK_SECRET)) {
-      return res.status(401).send('Invalid signature');
-    }
-    
-    // Now parse the body
-    const event = JSON.parse(req.body);
-    // ... process event
-  }
-);
+1. Log in to your Hubtel merchant dashboard
+2. Go to Business Settings
+3. Update the business name
+4. Changes take effect on the next checkout session
+
+### ❌ Hubtel: USD to GHS conversion
+
+This is expected behavior. Hubtel operates in Ghana Cedis (GHS). When you send a USD amount, Hubtel converts at their current exchange rate. The customer sees the GHS amount on the checkout page.
+
+You cannot control the exchange rate. If exact USD amounts matter, use a provider that supports USD natively (Emergent, Paystack, Pesapal — when activated).
+
+### ❌ Emergent: 500 Internal Server Error
+
 ```
+HTTP 500 — IIS Configuration Error
+Server: api.interpayafrica.com
+```
+
+This is a server-side issue on Emergent's infrastructure (ASP.NET web.config error, line 136). SentinelGate credentials may be valid but cannot be verified until their server is fixed. This requires escalation to InterPay Africa's infrastructure team — it is not fixable from SentinelGate's side.
+
+### ❌ Paystack: "Invalid key" on transaction endpoints
+
+Paystack keys work for read endpoints (`/bank`, `/resolve`) but return "Invalid key" on transaction endpoints (`/transaction/initialize`, `/charge`).
+
+**Cause:** Paystack account business verification is incomplete.
+
+**Fix:** Complete business verification on [dashboard.paystack.co](https://dashboard.paystack.co) → Settings → Business → Submit all required documents.
+
+### ❌ Pesapal: "invalid_consumer_key_or_secret_provided"
+
+The consumer key/secret pair is rejected by Pesapal's API.
+
+**Fix:**
+1. Log in to [pay.pesapal.com](https://pay.pesapal.com)
+2. Go to API Keys section
+3. Generate new live keys
+4. Share updated keys with SentinelGate
+
+### ❌ BUNI M-Pesa: STK Push not received by customer
+
+1. Verify the phone number is in correct format: `254712345678` (no +, no spaces)
+2. Check if BUNI is on UAT or production gateway (currently UAT)
+3. STK push requires the phone to be on Safaricom network
+4. Customer's phone must have M-Pesa activated and sufficient balance
+
+---
+
+## WooCommerce Plugin Issues
+
+### ❌ "Transaction Declined (Sandbox Mode)" error
+
+This is NOT from SentinelGate. Another payment gateway (often the default WooCommerce one) is active and in sandbox mode.
+
+**Fix:** Go to WooCommerce → Settings → Payments → disable all gateways except SentinelGate PSP.
+
+### ❌ Order stays in "Pending Payment" after customer pays
+
+The webhook isn't reaching WooCommerce. Check:
+
+1. Is the endpoint accessible? Visit `https://yourstore.com/wc-api/sentinelgate_callback/` — should not 404
+2. Flush rewrite rules: Settings → Permalinks → Save
+3. Check if a security plugin (Wordfence, Sucuri, iThemes) is blocking POST requests
+4. Check WooCommerce logs: WooCommerce → Status → Logs → `sentinelgate-*`
+
+### ❌ Plugin settings not saving
+
+1. Clear any page cache (WP Super Cache, W3 Total Cache, LiteSpeed Cache)
+2. Try in a private/incognito browser window
+3. Check PHP error logs: `wp-content/debug.log` (enable with `WP_DEBUG=true` in `wp-config.php`)
+
+---
+
+## Shopify Integration Issues
+
+### ❌ Webhooks not being received from Shopify
+
+1. Verify webhook URLs in Shopify Admin → Settings → Notifications → Webhooks
+2. Check if `https://sentinelgate.biz` is reachable
+3. Verify the HMAC secret matches what SentinelGate has on file
+4. Check Shopify webhook delivery log for error codes
+
+### ❌ Customer not redirected after Shopify checkout
+
+1. Check that the Additional Scripts are installed: Settings → Checkout → Order status page
+2. Open browser developer console (F12) and check for JavaScript errors
+3. The redirect script runs on the **order status page**, not the checkout page
+4. Test in incognito — browser extensions can interfere
+
+### ❌ Order not marked as paid in Shopify
+
+1. Verify the Shopify Admin API token has `write_orders` scope
+2. Check if the token has been revoked or expired
+3. Generate a new token: Settings → Apps → Your App → API Credentials
 
 ---
 
 ## Connection Issues
 
-### ❌ Error: "Connection timeout"
+### ❌ Connection timeout
 
-**Solutions:**
-
-1. **Increase timeout:**
 ```javascript
-   const response = await axios.post(url, data, {
-     timeout: 30000  // 30 seconds instead of default 5s
-   });
+// Set a reasonable timeout (30 seconds for payment creation)
+const response = await axios.post(url, data, {
+  timeout: 30000
+});
 ```
 
-2. **Implement retry logic:**
+If timeouts persist:
+1. Check if your server can reach `sentinelgate.biz`:
+   ```bash
+   curl -v https://sentinelgate.biz/health
+   ```
+2. Check DNS resolution: `nslookup sentinelgate.biz`
+3. Check if your hosting provider blocks outbound HTTPS
+4. Check if a corporate firewall is blocking the connection
+
+### ❌ Rate limit exceeded (HTTP 429)
+
+| Endpoint | Limit |
+|----------|-------|
+| `/v1/hosted/create` | 60/min |
+| `/v1/charge` | 30/min |
+| `/v1/transaction/:id` | 120/min |
+| `/v1/refund` | 10/min |
+
+**Solution:** Implement exponential backoff:
+
 ```javascript
-   async function createPaymentWithRetry(payload, maxRetries = 3) {
-     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-       try {
-         return await createPayment(payload);
-       } catch (error) {
-         if (attempt === maxRetries) throw error;
-         
-         // Exponential backoff
-         const delay = Math.pow(2, attempt) * 1000;
-         await new Promise(resolve => setTimeout(resolve, delay));
-         
-         console.log(`Retry attempt ${attempt + 1}...`);
-       }
-     }
-   }
-```
-
----
-
-### ❌ Error: "Rate limit exceeded"
-
-**Symptoms:**
-```json
-{
-  "error": {
-    "code": "RATE_LIMIT_EXCEEDED",
-    "message": "Too many requests. Please try again later."
+async function callWithBackoff(fn, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.response?.status !== 429 || attempt === maxRetries) throw error;
+      const delay = Math.pow(2, attempt) * 1000;
+      await new Promise(r => setTimeout(r, delay));
+    }
   }
 }
 ```
 
-**Solutions:**
-```javascript
-// Implement rate limiting on client side
-const rateLimit = require('bottleneck');
-
-const limiter = new rateLimit({
-  maxConcurrent: 5,        // Max 5 concurrent requests
-  minTime: 100             // Min 100ms between requests
-});
-
-async function createPayment(data) {
-  return limiter.schedule(() => 
-    sentinelgate.createPayment(data)
-  );
-}
-```
-
 ---
 
-## Testing Issues
+## Server Administration Issues
 
-### ❌ Test phone not working
+### ❌ svc-rails won't start
 
-**Test numbers:**
-```javascript
-// Kenya M-Pesa test numbers
-const TEST_NUMBERS = {
-  // Sandbox environment
-  success: '254712345678',      // Always succeeds immediately
-  fail: '254700000000',         // Always fails
-  timeout: '254711111111',      // Times out (stays pending)
-  cancel: '254722222222'        // User cancels
-};
-
-// How to use
-const result = await createMpesaPayment(
-  1000,
-  TEST_NUMBERS.success,  // Will succeed
-  'Test payment'
-);
-```
-
----
-
-## Production Issues
-
-### ❌ Payments work in test but fail in production
-
-**Checklist:**
-
-- [ ] Using production API credentials (not test)
-- [ ] Updated webhook URL to production domain
-- [ ] SSL certificate is valid
-- [ ] Production server can reach SentinelGate API
-- [ ] Firewall allows outbound HTTPS connections
-- [ ] Using real phone numbers (not test numbers)
-
-**Verify production setup:**
 ```bash
-# Test API connection
-curl -X POST http://185.229.224.244:3000/api/payments/create \
-  -H "X-API-Key: $PROD_API_KEY" \
-  -H "X-API-Secret: $PROD_API_SECRET" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount_cents": 1000,
-    "currency": "KES",
-    "provider": "MPESA_SAFARICOM",
-    "metadata": {
-      "phone_number": "254712345678",
-      "description": "Production test"
-    },
-    "callback_url": "https://yourdomain.com/webhook"
-  }'
+# Check PM2 logs
+pm2 logs sentinel-svc-rails --lines 30 --nostream
+
+# Common causes:
+# 1. Missing .env → copy from .env.example and fill in values
+# 2. PostgreSQL not running → systemctl start postgresql
+# 3. Redis not running → systemctl start redis-server
+# 4. Port 3003 in use → lsof -i :3003
+# 5. Build errors → npm run build (check output for errors)
+```
+
+### ❌ TypeScript build errors
+
+```bash
+npx tsc --project tsconfig.json 2>&1 | head -30
+```
+
+Known non-blocking errors (safe to ignore because `tsconfig.json` has `strict: false`):
+- `paystack.adapter.ts`: Property 'createPayment' does not exist
+- `pesapal.adapter.ts`: Property 'createPayment' does not exist
+- `registry.ts`: Type missing properties
+- `brooks.routes.ts`: Argument type mismatch
+
+These are type annotation issues that don't affect runtime behavior.
+
+### ❌ Database connection failed
+
+```bash
+# Check PostgreSQL is running
+systemctl status postgresql
+
+# Test connection
+psql "postgresql://sentinel:YOUR_PASSWORD@localhost:5432/sentinel" -c "SELECT 1;"
+
+# Check the DATABASE_URL in .env matches
+grep DATABASE_URL .env
+
+# Common fix: restart PostgreSQL
+systemctl restart postgresql
+```
+
+### ❌ Redis connection failed
+
+```bash
+# Check Redis is running
+systemctl status redis-server
+
+# Test
+redis-cli ping
+# Expected: PONG
+
+# Common fix: restart Redis
+systemctl restart redis-server
+```
+
+### ❌ Apache not proxying correctly
+
+```bash
+# Verify Apache config is correct
+apache2ctl configtest
+
+# Check the ACTIVE config file (NOT the -le-ssl.conf)
+grep "ProxyPass" /etc/apache2/sites-available/sentinelgate.biz.conf
+
+# Reload after changes
+systemctl reload apache2
+
+# Test direct backend access (bypassing Apache)
+curl -s http://localhost:3003/health
 ```
 
 ---
 
 ## Debugging Checklist
 
-When something goes wrong:
+When something doesn't work, run through this in order:
 
-1. **Check API response:**
-```javascript
+1. **Is the service running?**
+   ```bash
+   pm2 status
+   curl -s https://sentinelgate.biz/health
+   ```
+
+2. **Are credentials correct?**
+   ```bash
+   curl -X POST https://sentinelgate.biz/v1/hosted/create \
+     -H "X-API-Key: $SENTINELGATE_API_KEY" \
+     -H "X-API-Secret: $SENTINELGATE_API_SECRET" \
+     -H "Content-Type: application/json" \
+     -d '{"amount":"1.00","currency":"USD","order_id":"debug-001","callback_url":"https://yoursite.com/webhook","return_url":"https://yoursite.com"}'
+   ```
+
+3. **Check PM2 logs:**
+   ```bash
+   pm2 logs sentinel-svc-rails --lines 50 --nostream | grep -i "error\|fail\|warn"
+   ```
+
+4. **Check the request you're sending:**
+   ```javascript
+   console.log('Request:', JSON.stringify({
+     url, headers: { 'X-API-Key': key.substring(0, 20) + '...' }, body
+   }, null, 2));
+   ```
+
+5. **Check the response:**
+   ```javascript
    try {
-     const result = await createPayment(data);
+     const result = await axios.post(url, data, { headers });
+     console.log('Response:', result.status, result.data);
    } catch (error) {
-     console.log('Status:', error.response?.status);
-     console.log('Error:', error.response?.data);
-     console.log('Headers:', error.response?.headers);
+     console.error('Error:', error.response?.status, error.response?.data);
    }
-```
-
-2. **Verify request:**
-```javascript
-   console.log('Request:', {
-     url: url,
-     headers: headers,
-     body: JSON.stringify(payload, null, 2)
-   });
-```
-
-3. **Check environment:**
-```bash
-   echo "API Key: ${SENTINELGATE_API_KEY:0:20}..."
-   echo "Base URL: $SENTINELGATE_BASE_URL"
-```
-
-4. **Test webhook locally:**
-```bash
-   # Use ngrok for local testing
-   ngrok http 3000
-   # Use the ngrok URL as callback_url
-```
+   ```
 
 ---
 
 ## Getting Help
 
-If you're still stuck:
-
-1. **Check status page:** http://status.sentinelgate.com
-2. **Search documentation:** Use Ctrl+F in this guide
-3. **Contact support:** support@sentinelgate.com
-
 **Include in your support request:**
-- Payment ID (if available)
-- Error message
-- Request/response logs
-- Code snippet (remove credentials!)
+- Transaction ID (e.g., `sg_txn_1771888643979_cfe07b9d7fe6`)
+- Error message or HTTP status code
+- Request payload (remove credentials!)
+- Timestamp of the failed request
+- Provider if known (Hubtel, BUNI, etc.)
 
+**Contact:** support@sentinelgate.biz
+
+---
+
+*© 2026 SentinelGate. All rights reserved.*
