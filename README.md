@@ -54,13 +54,13 @@ SentinelGate sits between your online store and payment providers. Your store ta
 
 ## Supported Payment Methods
 
-| Method | Currencies | Providers |
-|--------|-----------|-----------|
-| **Visa / Mastercard** | USD, GHS | Hubtel, Paystack, Emergent |
-| **Mobile Money (Ghana)** | GHS | Hubtel |
-| **M-Pesa (Kenya)** | KES | BUNI/KCB |
-| **Mobile Money (East Africa)** | KES, UGX, TZS | Pesapal |
-| **Bank Transfer** | USD, NGN | Paystack, Korapay |
+| Method | Currencies | 
+|--------|-----------|
+| **Visa / Mastercard** | USD, GHS | 
+| **Mobile Money (Ghana)** | GHS |
+| **M-Pesa (Kenya)** | KES |
+| **Mobile Money (East Africa)** | KES, UGX, TZS | 
+| **Bank Transfer** | USD, NGN |
 
 ---
 
