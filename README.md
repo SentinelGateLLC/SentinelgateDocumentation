@@ -103,7 +103,7 @@ curl -X POST https://sentinelgate.biz/v1/hosted/create \
   }'
 ```
 
-Redirect the customer to the `redirect_url` in the response. Full guide: [API Reference](./docs/API_REFERENCE.md)
+Redirect the customer to the `redirect_url` in the response. Full guide: [API Reference](API_Reference.md)
 
 ---
 
