@@ -1,27 +1,69 @@
-﻿# CREDENTIALS - NEVER COMMIT THESE!
-*credentials*.txt
-*credentials*.json
-*CREDENTIALS*
-merchant-credentials*
-*api_key*
-*api_secret*
-*webhook_secret*
-merchant-packages/
+# Dependencies
+node_modules/
+.npm
 
-# Environment files
+# Build output
+dist/
+
+# Environment & secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
-# Secrets
-secrets.*
-config/secrets*
+# Backups
+*.bak
+*.bak.*
+backups/
 
-# OS files
-.DS_Store
-Thumbs.db
+# Credential dumps
+merchant-credentials-*.txt
+merchant-credentials-*.json
+merchant-portal-login-*.json
+AIMEDIA-LTD-Portal-Login.txt
 
-# Editor files
+# Archives & packages
+*.tar.gz
+*.zip
+sentinelgate-complete-*/
+sentinelgate-complete-package-*/
+
+# Old doc packages (replaced by docs/)
+github-docs-package/
+documentation/
+
+# Prisma lock
+prisma/migrations/**/migration_lock.toml
+
+# IDE
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Turbo cache
+.turbo/
+
+# Logs
+*.log
+logs/
+
+# Docker backups
+Dockerfile.bak*
+
+# Misc build artifacts
+check_buni_config.js
+create-download-package.sh
+create-merchant-aimedia.js
+create-merchant-login.js
+create-merchants.js
+download-instructions.txt
+issue-merchant-credentials.js
+run-seed.js
+test-payment.sh
+test-setup.js
+update-merchant-name.js
