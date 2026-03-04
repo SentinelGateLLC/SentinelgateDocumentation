@@ -165,4 +165,4 @@ Use `sk_test_` prefix API key for sandbox mode. Sandbox transactions settle inst
 
 ---
 
-© 2026 SentinelGate — Whyte AG Group
+© 2026 SentinelGate 
