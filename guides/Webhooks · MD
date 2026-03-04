@@ -1,0 +1,107 @@
+# Webhooks
+
+SentinelGate sends webhook notifications to your `callback_url` when payment status changes.
+
+---
+
+## Webhook Format
+
+```
+POST https://yoursite.com/webhook
+Content-Type: application/json
+X-SG-Signature: sha256=abc123...
+X-SG-Event: payment.captured
+X-SG-Timestamp: 1677456000
+```
+
+**Body:**
+
+```json
+{
+  "event": "payment.captured",
+  "transaction_id": "txn_def456",
+  "session_id": "sess_abc123",
+  "status": "CAPTURED",
+  "amount_cents": 5000,
+  "currency": "USD",
+  "method": "CARD",
+  "metadata": { "order_id": "1234" },
+  "timestamp": "2026-02-26T10:30:05Z"
+}
+```
+
+## Events
+
+| Event | Description |
+|-------|-------------|
+| `payment.pending` | Payment initiated |
+| `payment.captured` | Payment successfully captured |
+| `payment.failed` | Payment failed or declined |
+| `payment.refunded` | Refund processed |
+| `payment.expired` | Session expired |
+
+## Signature Verification
+
+Verify the `X-SG-Signature` header using HMAC-SHA256 with your API Secret:
+
+### Python
+
+```python
+import hmac
+import hashlib
+
+def verify_webhook(payload_bytes, signature_header, api_secret):
+    expected = "sha256=" + hmac.new(
+        api_secret.encode(),
+        payload_bytes,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature_header)
+```
+
+### Node.js
+
+```javascript
+const crypto = require("crypto");
+
+function verifyWebhook(payloadBuffer, signatureHeader, apiSecret) {
+  const expected = "sha256=" + crypto
+    .createHmac("sha256", apiSecret)
+    .update(payloadBuffer)
+    .digest("hex");
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(signatureHeader)
+  );
+}
+```
+
+### PHP
+
+```php
+function verify_webhook($payload, $signature, $secret) {
+    $expected = "sha256=" . hash_hmac("sha256", $payload, $secret);
+    return hash_equals($expected, $signature);
+}
+```
+
+## Retry Policy
+
+Failed webhook deliveries are retried with exponential backoff:
+
+| Attempt | Delay |
+|---------|-------|
+| 1 | Immediate |
+| 2 | 5 minutes |
+| 3 | 30 minutes |
+| 4 | 2 hours |
+| 5 | 24 hours |
+
+Return HTTP `200` to acknowledge receipt. Any other status triggers a retry.
+
+## Best Practices
+
+- Always verify the `X-SG-Signature` before processing
+- Process webhooks idempotently (use `transaction_id` as key)
+- Return `200` quickly; process asynchronously if needed
+- Store webhook payloads for debugging
