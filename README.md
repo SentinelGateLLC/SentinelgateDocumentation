@@ -68,7 +68,7 @@ SentinelGate sits between your online store and payment providers. Your store ta
 
 ### WooCommerce (Fastest)
 
-1. Download `sentinelgate-psp.zip`
+1. Download `sentinelgate-psp.zip`[a relative link](sentinelgate-psp.zip)
 2. WordPress Admin → Plugins → Upload → Activate
 3. WooCommerce → Settings → Payments → SentinelGate PSP
 4. Enter your API Key, Secret, and Webhook Secret
