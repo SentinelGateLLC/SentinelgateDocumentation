@@ -1,7 +1,7 @@
 # Card Payment Method Documentation
 
 **For:** Developers & Technical Teams
-**Last Updated:** February 24, 2026
+**Last Updated:** April 29, 2026
 
 ---
 
@@ -37,6 +37,7 @@ Customer → redirected to your return_url
 **PCI Requirement:** None. Card data never touches your server.
 
 **Example: Standard Card Hosted Checkout**
+
 ```bash
 curl -X POST https://sentinelgate.biz/v1/hosted/create \
   -H "X-API-Key: sg_key_yourstore_abc123" \
@@ -53,7 +54,9 @@ curl -X POST https://sentinelgate.biz/v1/hosted/create \
 ```
 
 **Example: MB Way Hosted Checkout**
-To use MB Way, simply add the mb_way_payment flag set to true.
+
+To use MB Way, simply add the `mb_way_payment` flag set to true.
+
 ```bash
 curl -X POST https://sentinelgate.biz/v1/hosted/create \
   -H "X-API-Key: sg_key_yourstore_abc123" \
