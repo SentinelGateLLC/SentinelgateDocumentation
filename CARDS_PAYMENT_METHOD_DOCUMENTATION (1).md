@@ -17,14 +17,19 @@ This document covers how card payments work end-to-end, which providers handle c
 
 ### Mode 1: Hosted Checkout (Recommended)
 
-The customer is redirected to a payment page hosted by SentinelGate or the provider. Card details are entered on their page — never on yours.
+The customer is redirected to a payment page hosted by SentinelGate or the provider. For card payments, details are entered on their page. For MB Way and SEPA, the customer provides the necessary identifiers to trigger the payment process.
 
 **Endpoint:** `POST /v1/hosted/create`
+
+**Payment Types:**
+- Cards: Standard behavior (Default)
+- MB Way: Enabled by passing `"mb_way_payment": true`
+- SEPA Direct Debit: Enabled by passing `"sepa_payment": true`
 
 **Flow:**
 ```
 Your server → POST /v1/hosted/create → get redirect_url
-Customer → redirect to payment page → enter card → pay
+Customer → redirect to payment page → enter details(Card, Phone or IBAN) → pay
 Provider → processes card → callback to SentinelGate
 SentinelGate → webhook to your callback_url
 Customer → redirected to your return_url
@@ -32,7 +37,8 @@ Customer → redirected to your return_url
 
 **PCI Requirement:** None. Card data never touches your server.
 
-**Example:**
+**Example: Standard Card Hosted Checkout**
+
 ```bash
 curl -X POST https://sentinelgate.biz/v1/hosted/create \
   -H "X-API-Key: sg_key_yourstore_abc123" \
@@ -47,6 +53,47 @@ curl -X POST https://sentinelgate.biz/v1/hosted/create \
     "return_url": "https://yoursite.com/order-confirmed"
   }'
 ```
+
+**Example: MB Way Hosted Checkout**
+
+To use MB Way, simply add the `mb_way_payment` flag set to true.
+
+```bash
+curl -X POST https://sentinelgate.biz/v1/hosted/create \
+  -H "X-API-Key: sg_key_yourstore_abc123" \
+  -H "X-API-Secret: sg_secret_yourstore_def456" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "25.00",
+    "currency": "EUR",
+    "order_id": "ORD-MBW-99",
+    "mb_way_payment": true,
+    "callback_url": "https://yoursite.com/webhook",
+    "return_url": "https://yoursite.com/order-confirmed"
+  }'
+```
+*Note: MB Way payments are only processed in Euros (EUR) and are restricted to the Portugal region.*
+
+
+**Example: SEPA Direct Debit Hosted Checkout**
+
+To use SEPA, simply add the `sepa_payment` flag set to true.
+
+```bash
+curl -X POST https://sentinelgate.biz/v1/hosted/create \
+  -H "X-API-Key: sg_key_yourstore_abc123" \
+  -H "X-API-Secret: sg_secret_yourstore_def456" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "100.00",
+    "currency": "EUR",
+    "order_id": "ORD-SEPA-99",
+    "sepa_payment": true,
+    "callback_url": "https://yoursite.com/webhook",
+    "return_url": "https://yoursite.com/order-confirmed"
+  }'
+```
+*Note: SEPA payments are only processed in Euros (EUR).*
 
 ### Mode 2: Direct Charge (PCI Required)
 
