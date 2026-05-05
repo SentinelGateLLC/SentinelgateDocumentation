@@ -22,11 +22,10 @@ The customer is redirected to a payment page hosted by SentinelGate or the provi
 **Endpoint:** `POST /v1/hosted/create`
 
 **Payment Types:**
-- Cards: Used by default when the `"payment_method"` parameter is omitted, or when it is explicitly set to `"card"`.
-- Alternative Methods: Enabled by passing the `"payment_method"` parameter. Supported values include:
-  - `"mb_way"`: MB Way payments in Portugal (EUR only).
-  - `"sepa_debit"`: SEPA Direct Debit payments across Europe (EUR only).
-  - `"upi"`: UPI Instant real-time payments in India (INR only).
+1. Cards: Used by default when the `"payment_method"` parameter is omitted, or when it is explicitly set to `"card"`.
+2. MB Way: Enabled by passing the `"payment_method": "mb_way"` parameter. These are Mobile payments in Portugal (EUR only).
+3. SEPA Direct Debit: Enabled by passing the `"payment_method": "sepa_debit"` parameter. These payments are available only in Europe (EUR only).
+4. UPI: Enabled by passing the `"payment_method": "upi"` parameter. These are Instant real-time payments in India (INR only).
 
 **Flow:**
 ```
