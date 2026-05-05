@@ -1,7 +1,7 @@
 # Card Payment Method Documentation
 
 **For:** Developers & Technical Teams
-**Last Updated:** February 24, 2026
+**Last Updated:** May 5, 2026
 
 ---
 
@@ -17,19 +17,21 @@ This document covers how card payments work end-to-end, which providers handle c
 
 ### Mode 1: Hosted Checkout (Recommended)
 
-The customer is redirected to a payment page hosted by SentinelGate or the provider. For card payments, details are entered on their page. For MB Way and SEPA, the customer provides the necessary identifiers to trigger the payment process.
+The customer is redirected to a payment page hosted by SentinelGate or the provider. For **card payments**, details are entered on their page. For **MB Way, SEPA Direct Debit and UPI payments**, the customer provides the necessary identifiers to trigger the payment process.
 
 **Endpoint:** `POST /v1/hosted/create`
 
 **Payment Types:**
-- Cards: Standard behavior (Default)
-- MB Way: Enabled by passing `"mb_way_payment": true`
-- SEPA Direct Debit: Enabled by passing `"sepa_payment": true`
+- Cards: Used by default when the `"payment_method"` parameter is omitted, or when it is explicitly set to `"card"`.
+- Alternative Methods: Enabled by passing the `"payment_method"` parameter. Supported values include:
+  - `"mb_way"`: MB Way payments in Portugal (EUR only).
+  - `"sepa_debit"`: SEPA Direct Debit payments across Europe (EUR only).
+  - `"upi"`: UPI Instant real-time payments in India (INR only).
 
 **Flow:**
 ```
 Your server → POST /v1/hosted/create → get redirect_url
-Customer → redirect to payment page → enter details(Card, Phone or IBAN) → pay
+Customer → redirect to payment page → enter details(Card, Phone, IBAN or Name) → pay
 Provider → processes card → callback to SentinelGate
 SentinelGate → webhook to your callback_url
 Customer → redirected to your return_url
@@ -37,7 +39,7 @@ Customer → redirected to your return_url
 
 **PCI Requirement:** None. Card data never touches your server.
 
-**Example: Standard Card Hosted Checkout**
+**Example:**
 
 ```bash
 curl -X POST https://sentinelgate.biz/v1/hosted/create \
@@ -48,52 +50,14 @@ curl -X POST https://sentinelgate.biz/v1/hosted/create \
     "amount": "50.00",
     "currency": "USD",
     "order_id": "ORD-001",
+    "payment_method": "card",
     "customer_email": "buyer@example.com",
     "callback_url": "https://yoursite.com/webhook",
     "return_url": "https://yoursite.com/order-confirmed"
   }'
 ```
+*Note: Ensure the currency matches the requirements for the selected payment_method (e.g., EUR for `mb_way`/`sepa_debit` or INR for `upi`).*
 
-**Example: MB Way Hosted Checkout**
-
-To use MB Way, simply add the `mb_way_payment` flag set to true.
-
-```bash
-curl -X POST https://sentinelgate.biz/v1/hosted/create \
-  -H "X-API-Key: sg_key_yourstore_abc123" \
-  -H "X-API-Secret: sg_secret_yourstore_def456" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": "25.00",
-    "currency": "EUR",
-    "order_id": "ORD-MBW-99",
-    "mb_way_payment": true,
-    "callback_url": "https://yoursite.com/webhook",
-    "return_url": "https://yoursite.com/order-confirmed"
-  }'
-```
-*Note: MB Way payments are only processed in Euros (EUR) and are restricted to the Portugal region.*
-
-
-**Example: SEPA Direct Debit Hosted Checkout**
-
-To use SEPA, simply add the `sepa_payment` flag set to true.
-
-```bash
-curl -X POST https://sentinelgate.biz/v1/hosted/create \
-  -H "X-API-Key: sg_key_yourstore_abc123" \
-  -H "X-API-Secret: sg_secret_yourstore_def456" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": "100.00",
-    "currency": "EUR",
-    "order_id": "ORD-SEPA-99",
-    "sepa_payment": true,
-    "callback_url": "https://yoursite.com/webhook",
-    "return_url": "https://yoursite.com/order-confirmed"
-  }'
-```
-*Note: SEPA payments are only processed in Euros (EUR).*
 
 ### Mode 2: Direct Charge (PCI Required)
 
