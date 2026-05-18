@@ -1,7 +1,7 @@
 # Card Payment Method Documentation
 
 **For:** Developers & Technical Teams
-**Last Updated:** May 5, 2026
+**Last Updated:** May 19, 2026
 
 ---
 
@@ -17,20 +17,36 @@ This document covers how card payments work end-to-end, which providers handle c
 
 ### Mode 1: Hosted Checkout (Recommended)
 
-The customer is redirected to a payment page hosted by SentinelGate or the provider. For **card payments**, details are entered on their page. For **MB Way, SEPA Direct Debit and UPI payments**, the customer provides the necessary identifiers to trigger the payment process.
+The customer is redirected to a payment page hosted by SentinelGate or the provider. For **card payments**, details are entered on their page. For **alternative payment methods (APMs) and digital wallets**, the customer provides the necessary identifiers or authenticates directly on the hosted page to trigger the payment process.
 
 **Endpoint:** `POST /v1/hosted/create`
 
-**Payment Types:**
-1. Cards: Used by default when the `"payment_method"` parameter is omitted, or when it is explicitly set to `"card"`.
-2. MB Way: Enabled by passing the `"payment_method": "mb_way"` parameter. These are Mobile payments in Portugal (EUR only).
-3. SEPA Direct Debit: Enabled by passing the `"payment_method": "sepa_debit"` parameter. These payments are available only in Europe (EUR only).
-4. UPI: Enabled by passing the `"payment_method": "upi"` parameter. These are Instant real-time payments in India (INR only).
+---
+
+**Supported Hosted Payment Methods**
+
+| `payment_method` Parameter | Description / Type | Required Currency | Regional Availability |
+| :--- | :--- | :--- | :--- |
+| *Omitted* or `"CARD"` | **Credit / Debit Cards** (Default global checkout flow) | Flexible (Merchant Config) | Global |
+| `"MB_WAY"` | **MB Way** (Mobile instant payments) | **EUR** | Portugal |
+| `"SEPA_DEBIT"` | **SEPA Direct Debit** (Bank account pulls) | **EUR** | Europe |
+| `"UPI"` | **UPI** (Unified Payments Interface real-time bank transfers) | **INR** | India |
+| `"PAPARA"` | **Papara** (Local digital wallet ecosystem) | **TRY** | Turkey |
+| `"TOSLA"` | **Tosla** (Mobile wallet and prepaid card platform) | **TRY** | Turkey |
+| `"PAYCELL"` | **Paycell** (Digital financial services wallet) | **TRY** | Turkey |
+| `"FUPS"` | **FUPS** (Next-gen digital account and payment network) | **TRY** | Turkey |
+| `"AHLPAY"` | **Ahlpay** (Local digital wallet service) | **TRY** | Turkey |
+| `"HAYHAY"` | **Hayhay** (Local consumer payment digital wallet) | **TRY** | Turkey |
+| `"HADI_PAY"` | **Hadi Pay** (Mobile financial wallet network) | **TRY** | Turkey |
+| `"MONEYTOLIA"` | **Moneytolia** (Digital wallet and payment service) | **TRY** | Turkey |
+| `"PARAKOLAY"` | **Parakolay** (Alternative payment gateway solution) | **TRY** | Turkey |
+
+---
 
 **Flow:**
 ```
 Your server → POST /v1/hosted/create → get redirect_url
-Customer → redirect to payment page → enter details(Card, Phone, IBAN or Name) → pay
+Customer → redirect to payment page → enter details(Card, Phone, IBAN, Wallet ID, or Account Name etc) → pay
 Provider → processes card → callback to SentinelGate
 SentinelGate → webhook to your callback_url
 Customer → redirected to your return_url
@@ -55,7 +71,6 @@ curl -X POST https://sentinelgate.biz/v1/hosted/create \
     "return_url": "https://yoursite.com/order-confirmed"
   }'
 ```
-*Note: Ensure the currency matches the requirements for the selected payment_method (e.g., EUR for `mb_way`/`sepa_debit` or INR for `upi`).*
 
 
 ### Mode 2: Direct Charge (PCI Required)
