@@ -1,7 +1,7 @@
 # Card Payment Method Documentation
 
 **For:** Developers & Technical Teams
-**Last Updated:** May 5, 2026
+**Last Updated:** May 19, 2026
 
 ---
 
